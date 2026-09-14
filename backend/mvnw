@@ -1,0 +1,17 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Maven Start Up Batch script for Unix
+# ----------------------------------------------------------------------------
+
+if [ -n "$JAVA_HOME" ] ; then
+    if [ -x "$JAVA_HOME/bin/java" ] ; then
+        JAVACMD="$JAVA_HOME/bin/java"
+    else
+        echo "The JAVA_HOME environment variable is set incorrectly." >&2
+        exit 1
+    fi
+else
+    JAVACMD="java"
+fi
+
+exec mvn "$@"
