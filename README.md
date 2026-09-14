@@ -44,12 +44,12 @@ health-insurance-system/
 
 | Name | Role / Module Assignment | Student ID |
 |---|---|---|
-| Member 1 | Policy Management Module | ITXXXXXXXX |
-| Member 2 | Claim Management Module | ITXXXXXXXX |
-| Member 3 | Payment Management Module | ITXXXXXXXX |
-| Member 4 | Hospital Network Module | ITXXXXXXXX |
-| Member 5 | Customer Support Module | ITXXXXXXXX |
-| Member 6 | Admin & System Reporting Module | ITXXXXXXXX |
+| Perera W.W.M.D | Policy Management Module | IT25103980 |
+| Sarathchandra G.W.S.I | Claim Management Module | IT25101964 |
+| Lakshani J.D.C | Payment Management Module | IT25101957 |
+| Jayalath W.A.D | Hospital Network Module | IT25103984 |
+| Nemsith K.B.N | Customer Support Module | IT25101054 |
+| Dhimantha W.L.T | Admin & System Reporting Module | IT25102885 |
 
 ---
 
