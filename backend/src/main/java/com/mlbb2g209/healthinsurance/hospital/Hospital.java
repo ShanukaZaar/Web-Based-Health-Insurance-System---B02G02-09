@@ -9,93 +9,69 @@ import jakarta.persistence.Table;
 @Table(name = "hospitals")
 public class Hospital extends BaseEntity {
 
-    @Column(name = "hospital_code", nullable = false, unique = true)
-    private String hospitalCode;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "name", nullable = false)
+    @NotBlank(message = "Hospital name is required")
+    @Size(max = 150)
+    @Column(nullable = false, length = 150)
     private String name;
 
-    @Column(name = "address", nullable = false)
+    @NotBlank(message = "Registration number is required")
+    @Column(nullable = false, unique = true, length = 50)
+    private String registrationNo;
+
+    @Size(max = 255)
+    @Column(length = 255)
     private String address;
 
-    @Column(name = "city", nullable = false)
-    private String city;
+    @Size(max = 20)
+    @Column(length = 20)
+    private String contactNo;
 
-    @Column(name = "contact_number", nullable = false)
-    private String contactNumber;
-
-    @Column(name = "email")
+    @Email(message = "Enter a valid email address")
+    @Column(length = 120)
     private String email;
 
-    @Column(name = "is_empanelled")
-    private Boolean isEmpanelled;
+    @Column(nullable = false)
+    private boolean active = true;
 
-    public Hospital() {
+    @Column(nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    private LocalDateTime updatedAt;
+
+    @PreUpdate
+    void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public Hospital(String hospitalCode, String name, String address, String city, String contactNumber, String email, Boolean isEmpanelled) {
-        this.hospitalCode = hospitalCode;
-        this.name = name;
-        this.address = address;
-        this.city = city;
-        this.contactNumber = contactNumber;
-        this.email = email;
-        this.isEmpanelled = isEmpanelled;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public String getHospitalCode() {
-        return hospitalCode;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public void setHospitalCode(String hospitalCode) {
-        this.hospitalCode = hospitalCode;
-    }
+    public String getRegistrationNo() { return registrationNo; }
+    public void setRegistrationNo(String registrationNo) { this.registrationNo = registrationNo; }
 
-    public String getName() {
-        return name;
-    }
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getContactNo() { return contactNo; }
+    public void setContactNo(String contactNo) { this.contactNo = contactNo; }
 
-    public String getAddress() {
-        return address;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setAddress(String address) {
-        this.address = address;
-    }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
 
-    public String getCity() {
-        return city;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public void setCity(String city) {
-        this.city = city;
-    }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    public String getContactNumber() {
-        return contactNumber;
-    }
-
-    public void setContactNumber(String contactNumber) {
-        this.contactNumber = contactNumber;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public Boolean getIsEmpanelled() {
-        return isEmpanelled;
-    }
-
-    public void setIsEmpanelled(Boolean isEmpanelled) {
-        this.isEmpanelled = isEmpanelled;
-    }
 }
