@@ -8,4 +8,8 @@ import java.util.Optional;
 @Repository
 public interface HospitalRepository extends JpaRepository<Hospital, Long> {
     Optional<Hospital> findByHospitalCode(String hospitalCode);
+    
+    boolean existsByRegistrationNo(String registrationNo);
+
+    List<Hospital> findByNameContainingIgnoreCase(String name);
 }
