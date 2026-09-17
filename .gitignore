@@ -39,3 +39,6 @@ Desktop.ini
 
 # Maven Wrapper JAR (optional, ignored if binary generation is preferred locally)
 #.mvn/wrapper/maven-wrapper.jar
+
+uploads/ 
+run.ps1

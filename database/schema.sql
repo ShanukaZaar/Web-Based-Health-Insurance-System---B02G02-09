@@ -7,7 +7,6 @@
 -- blueprint and template for production migrations.
 -- ==============================================================================
 
-/*
 -- 1. Users Table (Admin & Authentication Module)
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -135,4 +134,3 @@ CREATE TABLE IF NOT EXISTS reports (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (generated_by) REFERENCES users(id)
 );
-*/
