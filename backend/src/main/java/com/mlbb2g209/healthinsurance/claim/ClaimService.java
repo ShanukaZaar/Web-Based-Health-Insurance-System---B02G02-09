@@ -6,4 +6,5 @@ public interface ClaimService {
     List<ClaimDTO> getAllClaims();
     ClaimDTO getClaimById(Long id);
     ClaimDTO submitClaim(ClaimDTO claimDTO);
+    ClaimDTO withdrawClaim(Long id);
 }

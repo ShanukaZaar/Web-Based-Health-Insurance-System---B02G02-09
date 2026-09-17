@@ -33,4 +33,11 @@ public class ClaimController {
         ClaimDTO created = claimService.submitClaim(claimDTO);
         return ResponseEntity.ok(ApiResponse.success("Claim submitted successfully", created));
     }
+
+    @PatchMapping("/{id}/withdraw")
+    public ResponseEntity<ApiResponse<ClaimDTO>> withdrawClaim(@PathVariable Long id) {
+        ClaimDTO withdrawn = claimService.withdrawClaim(id);
+        return ResponseEntity.ok(ApiResponse.success("Claim withdrawn successfully", withdrawn));
+    }
+
 }
