@@ -59,7 +59,7 @@ public class ClaimController {
 
     @PostMapping(value = "/{id}/document", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<ClaimDTO>> uploadDocument(@PathVariable Long id,
-                                                                 @RequestParam("file") MultipartFile file) {
+                                                                @RequestParam("file") MultipartFile file) {
         ClaimDTO updated = claimService.uploadDocument(id, file);
         return ResponseEntity.ok(ApiResponse.success("Document uploaded successfully", updated));
     }
