@@ -12,11 +12,11 @@ import {
 
 const links = [
   { to: "/policies", label: "Policy Management", icon: ShieldCheck },
-  { to: "/claims", label: "Claim Management", icon: FileText },
-  { to: "/hospitals", label: "Hospital Management", icon: Building2 },
-  { to: "/payments", label: "Payment Management", icon: Wallet },
-  { to: "/support", label: "Customer Support", icon: MessageSquareText },
-  { to: "/admin/reports", label: "Reporting & Admin", icon: BarChart3 },
+  // { to: "/claims", label: "Claim Management", icon: FileText },
+  // { to: "/hospitals", label: "Hospital Management", icon: Building2 },
+  // { to: "/payments", label: "Payment Management", icon: Wallet },
+  // { to: "/support", label: "Customer Support", icon: MessageSquareText },
+  // { to: "/admin/reports", label: "Reporting & Admin", icon: BarChart3 },
 ];
 
 export default function Sidebar({ open, onClose }) {
