@@ -10,14 +10,14 @@ import AdminReporting from '../pages/AdminReporting';
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/policies" replace />} />
+      <Route path="/" element={<Navigate to="/payments" replace />} />
       <Route path="/policies" element={<PolicyManagement />} />
       <Route path="/claims" element={<ClaimManagement />} />
       <Route path="/payments" element={<PaymentManagement />} />
       <Route path="/hospitals" element={<HospitalManagement />} />
       <Route path="/support" element={<CustomerSupport />} />
       <Route path="/admin" element={<AdminReporting />} />
-      <Route path="*" element={<Navigate to="/policies" replace />} />
+      <Route path="*" element={<Navigate to="/payments" replace />} />
     </Routes>
   );
 };
