@@ -1,33 +1,38 @@
-import { useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
-import Sidebar from "./Sidebar";
-import Navbar from "./Navbar";
-import Footer from "./Footer";
+import React, { useState } from 'react';
+import Navbar from './Navbar';
+import Sidebar from './Sidebar';
+import Footer from './Footer';
+import AiInsuranceAssistantModal from '../ai/AiInsuranceAssistantModal';
 
-const titleMap = {
-  "/policies": "Policy Management",
-  "/claims": "Claim Management",
-  "/hospitals": "Hospital Management",
-  "/payments": "Payment Management",
-  "/support": "Customer Support",
-  "/admin/reports": "Reporting & System Administration",
-};
-
-export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
-  const title = titleMap[location.pathname] || "Dashboard";
+const Layout = ({ children }) => {
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-slate-50">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Navbar onMenuClick={() => setSidebarOpen(true)} title={title} />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <Outlet />
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
+      <Navbar 
+        onOpenAiAssistant={() => setIsAiModalOpen(true)}
+        toggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        isMobileSidebarOpen={isMobileSidebarOpen}
+      />
+      <div className="flex flex-1">
+        <Sidebar 
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-x-hidden">
+          {children}
         </main>
-        <Footer />
       </div>
+      <Footer />
+
+      {/* Global AI Insurance Assistant Modal */}
+      <AiInsuranceAssistantModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+      />
     </div>
   );
-}
+};
+
+export default Layout;

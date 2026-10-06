@@ -1,0 +1,86 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║              HEALTH INSURANCE SYSTEM — USER DATA                    ║
+║              Last Updated: 2026-09-17 14:14:00                     ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+Total Users: 7
+═══════════════════════════════════════════════════════════════════════
+
+  ID          : 1
+  Username    : admin
+  Email       : admin@healthinsure.com
+  First Name  : System
+  Last Name   : Administrator
+  Phone       : +1-800-555-0199
+  Active      : true
+  Roles       : ROLE_ADMIN
+  Created At  : 2026-09-17T13:52:20.298594
+  -----------------------------------------------------------------------
+
+  ID          : 2
+  Username    : john_doe
+  Email       : john.doe@example.com
+  First Name  : John
+  Last Name   : Doe
+  Phone       : +1-555-0101
+  Active      : true
+  Roles       : ROLE_USER
+  Created At  : 2026-09-17T13:52:20.302794
+  -----------------------------------------------------------------------
+
+  ID          : 3
+  Username    : sarah_connor
+  Email       : sarah.c@example.com
+  First Name  : Sarah
+  Last Name   : Connor
+  Phone       : +1-555-0102
+  Active      : true
+  Roles       : ROLE_USER
+  Created At  : 2026-09-17T13:52:20.303565
+  -----------------------------------------------------------------------
+
+  ID          : 4
+  Username    : mike_smith
+  Email       : mike.s@example.com
+  First Name  : Mike
+  Last Name   : Smith
+  Phone       : +1-555-0103
+  Active      : true
+  Roles       : ROLE_USER
+  Created At  : 2026-09-17T13:52:20.304835
+  -----------------------------------------------------------------------
+
+  ID          : 5
+  Username    : emily_watson
+  Email       : emily.w@example.com
+  First Name  : Emily
+  Last Name   : Watson
+  Phone       : +1-555-0104
+  Active      : true
+  Roles       : ROLE_AGENT
+  Created At  : 2026-09-17T13:52:20.305780
+  -----------------------------------------------------------------------
+
+  ID          : 6
+  Username    : test_user
+  Email       : test@example.com
+  First Name  : Test
+  Last Name   : User
+  Phone       : +94-771234567
+  Active      : true
+  Roles       : ROLE_USER
+  Created At  : 2026-09-17T13:53:01.318304
+  -----------------------------------------------------------------------
+
+  ID          : 7
+  Username    : thisun
+  Email       : thisun989@gmail.com
+  First Name  : Thisun
+  Last Name   : Dhimantha
+  Phone       : 0779830978
+  Active      : true
+  Roles       : ROLE_USER
+  Created At  : 2026-09-17T14:00:20.270073
+  -----------------------------------------------------------------------
+
+[END OF FILE]

@@ -42,3 +42,6 @@ Desktop.ini
 
 uploads/ 
 run.ps1
+*.mv.db
+*.trace.db
+backend/src/main/resources/application.properties
