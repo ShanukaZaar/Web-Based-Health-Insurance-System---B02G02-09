@@ -1,9 +1,7 @@
 package com.mlbb2g209.healthinsurance.hospital;
 
 import com.mlbb2g209.healthinsurance.common.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "hospitals")
@@ -27,75 +25,42 @@ public class Hospital extends BaseEntity {
     @Column(name = "email")
     private String email;
 
-    @Column(name = "is_empanelled")
-    private Boolean isEmpanelled;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private HospitalStatus status;
 
     public Hospital() {
     }
 
-    public Hospital(String hospitalCode, String name, String address, String city, String contactNumber, String email, Boolean isEmpanelled) {
+    public Hospital(String hospitalCode, String name, String address, String city,
+                     String contactNumber, String email, HospitalStatus status) {
         this.hospitalCode = hospitalCode;
         this.name = name;
         this.address = address;
         this.city = city;
         this.contactNumber = contactNumber;
         this.email = email;
-        this.isEmpanelled = isEmpanelled;
+        this.status = status;
     }
 
-    public String getHospitalCode() {
-        return hospitalCode;
-    }
+    public String getHospitalCode() { return hospitalCode; }
+    public void setHospitalCode(String hospitalCode) { this.hospitalCode = hospitalCode; }
 
-    public void setHospitalCode(String hospitalCode) {
-        this.hospitalCode = hospitalCode;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
 
-    public String getAddress() {
-        return address;
-    }
+    public String getContactNumber() { return contactNumber; }
+    public void setContactNumber(String contactNumber) { this.contactNumber = contactNumber; }
 
-    public void setAddress(String address) {
-        this.address = address;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public String getCity() {
-        return city;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
-    }
-
-    public String getContactNumber() {
-        return contactNumber;
-    }
-
-    public void setContactNumber(String contactNumber) {
-        this.contactNumber = contactNumber;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public Boolean getIsEmpanelled() {
-        return isEmpanelled;
-    }
-
-    public void setIsEmpanelled(Boolean isEmpanelled) {
-        this.isEmpanelled = isEmpanelled;
-    }
+    public HospitalStatus getStatus() { return status; }
+    public void setStatus(HospitalStatus status) { this.status = status; }
 }

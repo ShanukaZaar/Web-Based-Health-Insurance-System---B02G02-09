@@ -1,22 +1,44 @@
 package com.mlbb2g209.healthinsurance.claim;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public class ClaimDTO {
 
     private Long id;
     private String claimNumber;
+
+    @NotNull(message = "userId is required")
     private Long userId;
+
+    @NotNull(message = "policyId is required")
     private Long policyId;
+
+    @NotNull(message = "claimAmount is required")
+    @Positive(message = "claimAmount must be greater than zero")
     private BigDecimal claimAmount;
+
     private BigDecimal approvedAmount;
     private String status;
+
+    @NotBlank(message = "description is required")
     private String description;
+
+    private String documentPath;
+    private String rejectionReason;
+    private LocalDateTime reviewedAt;
+    private LocalDateTime createdAt;
 
     public ClaimDTO() {
     }
 
-    public ClaimDTO(Long id, String claimNumber, Long userId, Long policyId, BigDecimal claimAmount, BigDecimal approvedAmount, String status, String description) {
+    public ClaimDTO(Long id, String claimNumber, Long userId, Long policyId, BigDecimal claimAmount,
+                     BigDecimal approvedAmount, String status, String description, String documentPath,
+                     String rejectionReason, LocalDateTime reviewedAt, LocalDateTime createdAt) {
         this.id = id;
         this.claimNumber = claimNumber;
         this.userId = userId;
@@ -25,6 +47,10 @@ public class ClaimDTO {
         this.approvedAmount = approvedAmount;
         this.status = status;
         this.description = description;
+        this.documentPath = documentPath;
+        this.rejectionReason = rejectionReason;
+        this.reviewedAt = reviewedAt;
+        this.createdAt = createdAt;
     }
 
     public Long getId() {
@@ -89,5 +115,37 @@ public class ClaimDTO {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getDocumentPath() {
+        return documentPath;
+    }
+
+    public void setDocumentPath(String documentPath) {
+        this.documentPath = documentPath;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
+    }
+
+    public LocalDateTime getReviewedAt() {
+        return reviewedAt;
+    }
+
+    public void setReviewedAt(LocalDateTime reviewedAt) {
+        this.reviewedAt = reviewedAt;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

@@ -1,21 +1,33 @@
-import React from 'react';
-import Navbar from './Navbar';
-import Sidebar from './Sidebar';
-import Footer from './Footer';
+import { useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import Sidebar from "./Sidebar";
+import Navbar from "./Navbar";
+import Footer from "./Footer";
 
-const Layout = ({ children }) => {
-  return (
-    <div className="min-h-screen flex flex-col bg-slate-950">
-      <Navbar />
-      <div className="flex flex-1">
-        <Sidebar />
-        <main className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
-          {children}
-        </main>
-      </div>
-      <Footer />
-    </div>
-  );
+const titleMap = {
+  "/policies": "Policy Management",
+  "/claims": "Claim Management",
+  "/hospitals": "Hospital Management",
+  "/payments": "Payment Management",
+  "/support": "Customer Support",
+  "/admin/reports": "Reporting & System Administration",
 };
 
-export default Layout;
+export default function Layout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const title = titleMap[location.pathname] || "Dashboard";
+
+  return (
+    <div className="flex h-screen bg-slate-50">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Navbar onMenuClick={() => setSidebarOpen(true)} title={title} />
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <Outlet />
+        </main>
+        <Footer />
+      </div>
+    </div>
+  );
+}
