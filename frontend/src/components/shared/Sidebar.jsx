@@ -109,7 +109,7 @@ const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
             <div className="w-2 h-2 rounded-full bg-emerald-600" />
             <div>
               <span className="text-xs font-bold text-slate-800 block">System Status</span>
-              <span className="text-[10px] text-slate-500">API Connected :8080</span>
+              <span className="text-[10px] text-slate-500">API Connected :8088</span>
             </div>
           </div>
           <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded">
