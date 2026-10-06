@@ -6,13 +6,21 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
+/**
+ * Payment Entity representing premium transactions in the Health Insurance System.
+ * Belongs to Module: Premium Payment Management (Lakshani J.D.C.)
+ */
 @Entity
 @Table(name = "payments")
 public class Payment extends BaseEntity {
 
-    @Column(name = "transaction_id", nullable = false, unique = true)
+    @Column(name = "transaction_id", nullable = false, unique = true, length = 100)
     private String transactionId;
+
+    @Column(name = "receipt_number", unique = true, length = 100)
+    private String receiptNumber;
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
@@ -23,26 +31,45 @@ public class Payment extends BaseEntity {
     @Column(name = "claim_id")
     private Long claimId;
 
-    @Column(name = "amount", nullable = false)
+    @Column(name = "amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 
-    @Column(name = "payment_method", nullable = false)
+    @Column(name = "payment_method", nullable = false, length = 50)
     private String paymentMethod;
 
-    @Column(name = "status")
+    @Column(name = "status", nullable = false, length = 30)
     private String status;
+
+    @Column(name = "payment_date")
+    private LocalDateTime paymentDate;
+
+    @Column(name = "description", length = 255)
+    private String description;
+
+    @Column(name = "refund_reason", length = 255)
+    private String refundReason;
+
+    @Column(name = "refund_date")
+    private LocalDateTime refundDate;
 
     public Payment() {
     }
 
-    public Payment(String transactionId, Long userId, Long policyId, Long claimId, BigDecimal amount, String paymentMethod, String status) {
+    public Payment(String transactionId, String receiptNumber, Long userId, Long policyId, Long claimId,
+                   BigDecimal amount, String paymentMethod, String status, LocalDateTime paymentDate,
+                   String description, String refundReason, LocalDateTime refundDate) {
         this.transactionId = transactionId;
+        this.receiptNumber = receiptNumber;
         this.userId = userId;
         this.policyId = policyId;
         this.claimId = claimId;
         this.amount = amount;
         this.paymentMethod = paymentMethod;
         this.status = status;
+        this.paymentDate = paymentDate;
+        this.description = description;
+        this.refundReason = refundReason;
+        this.refundDate = refundDate;
     }
 
     public String getTransactionId() {
@@ -51,6 +78,14 @@ public class Payment extends BaseEntity {
 
     public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
+    }
+
+    public String getReceiptNumber() {
+        return receiptNumber;
+    }
+
+    public void setReceiptNumber(String receiptNumber) {
+        this.receiptNumber = receiptNumber;
     }
 
     public Long getUserId() {
@@ -99,5 +134,37 @@ public class Payment extends BaseEntity {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public LocalDateTime getPaymentDate() {
+        return paymentDate;
+    }
+
+    public void setPaymentDate(LocalDateTime paymentDate) {
+        this.paymentDate = paymentDate;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getRefundReason() {
+        return refundReason;
+    }
+
+    public void setRefundReason(String refundReason) {
+        this.refundReason = refundReason;
+    }
+
+    public LocalDateTime getRefundDate() {
+        return refundDate;
+    }
+
+    public void setRefundDate(LocalDateTime refundDate) {
+        this.refundDate = refundDate;
     }
 }
