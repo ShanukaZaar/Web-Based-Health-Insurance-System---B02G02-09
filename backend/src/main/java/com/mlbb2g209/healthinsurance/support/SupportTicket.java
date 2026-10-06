@@ -1,89 +1,57 @@
 package com.mlbb2g209.healthinsurance.support;
 
+import com.mlbb2g209.healthinsurance.admin.User;
 import com.mlbb2g209.healthinsurance.common.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
+import java.time.LocalDateTime;
+
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "support_tickets")
+@Data
 public class SupportTicket extends BaseEntity {
 
-    @Column(name = "ticket_number", nullable = false, unique = true)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "ticket_number", nullable = false, unique = true, length = 50)
     private String ticketNumber;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @Column(name = "subject", nullable = false)
+    @Column(nullable = false, length = 150)
     private String subject;
 
-    @Column(name = "description", nullable = false, length = 2000)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "status")
-    private String status;
+    @Column(length = 30)
+    private String status = "OPEN";
 
-    @Column(name = "priority")
-    private String priority;
+    @Column(length = 20)
+    private String priority = "MEDIUM";
 
-    public SupportTicket() {
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
     }
 
-    public SupportTicket(String ticketNumber, Long userId, String subject, String description, String status, String priority) {
-        this.ticketNumber = ticketNumber;
-        this.userId = userId;
-        this.subject = subject;
-        this.description = description;
-        this.status = status;
-        this.priority = priority;
-    }
-
-    public String getTicketNumber() {
-        return ticketNumber;
-    }
-
-    public void setTicketNumber(String ticketNumber) {
-        this.ticketNumber = ticketNumber;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public String getSubject() {
-        return subject;
-    }
-
-    public void setSubject(String subject) {
-        this.subject = subject;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getPriority() {
-        return priority;
-    }
-
-    public void setPriority(String priority) {
-        this.priority = priority;
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

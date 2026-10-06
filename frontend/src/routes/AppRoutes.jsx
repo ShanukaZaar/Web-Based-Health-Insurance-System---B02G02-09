@@ -15,6 +15,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<DashboardOverview />} />
       <Route path="/dashboard" element={<DashboardOverview />} />
+      <Route path="/" element={<Navigate to="/payments" replace />} />
       <Route path="/policies" element={<PolicyManagement />} />
       <Route path="/claims" element={<ClaimManagement />} />
       <Route path="/payments" element={<PaymentManagement />} />
@@ -24,6 +25,16 @@ const AppRoutes = () => {
       <Route path="/ai-insights" element={<AiInsightsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/payments" replace />} />
+      <Route element={<Layout />}>
+        <Route path="/" element={<Navigate to="/policies" replace />} />
+        <Route path="/policies" element={<PolicyManagement />} />
+        <Route path="/claims" element={<ClaimManagement />} />
+        <Route path="/hospitals" element={<HospitalManagement />} />
+        <Route path="/payments" element={<PaymentManagement />} />
+        <Route path="/support" element={<CustomerSupport />} />
+        <Route path="/admin/reports" element={<AdminReporting />} />
+      </Route>
     </Routes>
   );
 };
