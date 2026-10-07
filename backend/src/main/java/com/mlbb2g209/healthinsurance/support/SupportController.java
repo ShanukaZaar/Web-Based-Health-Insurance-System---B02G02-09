@@ -17,7 +17,6 @@ public class SupportController {
 
     private final SupportService supportService;
 
-
     // CREATE
     @PostMapping
     public ResponseEntity<SupportDTO> createTicket(
