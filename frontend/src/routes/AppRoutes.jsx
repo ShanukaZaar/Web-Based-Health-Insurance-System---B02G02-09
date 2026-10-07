@@ -1,4 +1,5 @@
 import React from 'react';
+import Home from '../pages/Home';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import DashboardOverview from '../pages/DashboardOverview';
 import PolicyManagement from '../pages/PolicyManagement';
@@ -13,6 +14,7 @@ import SettingsPage from '../pages/SettingsPage';
 const AppRoutes = () => {
   return (
     <Routes>
+      <Route path="/home" element={<Home />} />
       <Route path="/" element={<DashboardOverview />} />
       <Route path="/dashboard" element={<DashboardOverview />} />
       <Route path="/policies" element={<PolicyManagement />} />
