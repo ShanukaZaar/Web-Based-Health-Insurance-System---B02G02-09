@@ -3,6 +3,7 @@ import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
 import AiInsuranceAssistantModal from '../ai/AiInsuranceAssistantModal';
+import ApiStatusBadge from './ApiStatusBadge';
 
 const Layout = ({ children }) => {
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
@@ -25,6 +26,9 @@ const Layout = ({ children }) => {
         </main>
       </div>
       <Footer />
+
+      {/* Floating Bottom-Left API Status Badge */}
+      <ApiStatusBadge />
 
       {/* Global AI Insurance Assistant Modal */}
       <AiInsuranceAssistantModal

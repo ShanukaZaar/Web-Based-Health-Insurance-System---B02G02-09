@@ -14,8 +14,10 @@ import {
   Bot,
   Zap
 } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
 
 export const AiClaimAnalysisModal = ({ isOpen, onClose, claim, onActionComplete }) => {
+  const { showToast } = useToast();
   const [analyzing, setAnalyzing] = useState(true);
 
   useEffect(() => {
@@ -30,16 +32,17 @@ export const AiClaimAnalysisModal = ({ isOpen, onClose, claim, onActionComplete 
 
   if (!isOpen || !claim) return null;
 
-  const isRejected = claim.status === 'REJECTED' || (claim.claimAmount && Number(claim.claimAmount) > 20000 && claim.id % 2 === 0);
-  
-  const riskScore = isRejected ? 74 : (claim.id === 2 || claim.claimNumber === 'CLM-8002') ? 14 : 18;
-  const fraudProbability = isRejected ? 68 : (claim.id === 2 ? 4 : 7);
-  const approvalProbability = isRejected ? 22 : (claim.id === 2 ? 96 : 92);
-  const missingDocs = isRejected ? ['Detailed Operative Notes', 'Original Pharmacy Bill Receipts'] : [];
+  const isRejected = (claim.status || '').toUpperCase() === 'REJECTED';
+  const riskScore = claim.riskScore !== undefined ? claim.riskScore : (isRejected ? 74 : 18);
+  const fraudProbability = isRejected ? 68 : Math.max(4, Math.min(90, Math.round(riskScore * 0.8)));
+  const approvalProbability = isRejected ? 15 : Math.max(10, Math.min(98, 100 - riskScore));
+  const missingDocs = isRejected
+    ? ['Detailed Operative Notes', 'Original Pharmacy Bill Receipts']
+    : (!claim.documentPath ? ['Treatment Verification Invoice'] : []);
 
   const recommendation = isRejected
-    ? "High Risk Detected: Claim involves elective treatment that lacks pre-authorization under active policy clauses. Manual review recommended."
-    : "Claim appears eligible based on active policy coverage, network hospital verification, and itemized invoice documentation.";
+    ? `High Risk Detected: Claim status is ${claim.status}. Reason: ${claim.rejectionReason || 'Requires policy compliance audit.'}`
+    : "Claim appears eligible based on active policy coverage and network provider verification.";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
@@ -279,7 +282,11 @@ export const AiClaimAnalysisModal = ({ isOpen, onClose, claim, onActionComplete 
             </button>
             <button
               onClick={() => {
-                alert(`Assessment confirmed for ${claim.claimNumber || 'claim'}.`);
+                showToast(
+                  `AI assessment for ${claim.claimNumber || 'claim'} confirmed. Risk score of ${riskScore}% logged to audit file.`,
+                  'success',
+                  'Assessment Confirmed'
+                );
                 onClose();
               }}
               className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors shadow-xs"

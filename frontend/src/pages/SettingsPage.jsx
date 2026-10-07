@@ -13,8 +13,10 @@ import {
   Lock,
   Globe
 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const SettingsPage = () => {
+  const { showToast } = useToast();
   const [aiSensitivity, setAiSensitivity] = useState('BALANCED');
   const [autoApprovalThreshold, setAutoApprovalThreshold] = useState(1000);
   const [emailAlerts, setEmailAlerts] = useState(true);
@@ -25,6 +27,11 @@ const SettingsPage = () => {
     e.preventDefault();
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+    showToast(
+      `System preferences, notification routing, and AI thresholds saved successfully.`,
+      'success',
+      'Settings Saved'
+    );
   };
 
   return (
@@ -35,7 +42,6 @@ const SettingsPage = () => {
           <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider bg-slate-100 px-2.5 py-1 rounded border border-slate-200">
             System Preferences
           </span>
-          <span className="text-xs text-slate-500">• MLBB2G209</span>
         </div>
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5 mt-2">
           <Settings className="w-7 h-7 text-emerald-600" />

@@ -40,90 +40,12 @@ import paymentService from '../services/paymentService';
 import AiInsuranceAssistantModal from '../components/ai/AiInsuranceAssistantModal';
 import AiClaimAnalysisModal from '../components/ai/AiClaimAnalysisModal';
 
-const claimsTrendData = [
-  { month: 'Jan', claims: 18, approved: 15, pending: 3 },
-  { month: 'Feb', claims: 24, approved: 20, pending: 4 },
-  { month: 'Mar', claims: 29, approved: 25, pending: 4 },
-  { month: 'Apr', claims: 34, approved: 28, pending: 6 },
-  { month: 'May', claims: 42, approved: 36, pending: 6 },
-  { month: 'Jun', claims: 48, approved: 41, pending: 7 },
-  { month: 'Jul', claims: 55, approved: 49, pending: 6 },
-];
-
-const paymentAnalyticsData = [
-  { month: 'Jan', volume: 45000, payouts: 38000 },
-  { month: 'Feb', volume: 52000, payouts: 44000 },
-  { month: 'Mar', volume: 61000, payouts: 51000 },
-  { month: 'Apr', volume: 58000, payouts: 49000 },
-  { month: 'May', volume: 74000, payouts: 62000 },
-  { month: 'Jun', volume: 83000, payouts: 71000 },
-  { month: 'Jul', volume: 92500, payouts: 79000 },
-];
-
-const fallbackClaims = [
-  {
-    id: 1,
-    claimNumber: 'CLM-8001',
-    patientName: 'John Doe',
-    policyTitle: 'Comprehensive Health Shield',
-    policyId: 1,
-    claimAmount: 12500.0,
-    hospital: 'City General Hospital',
-    date: '2026-09-28',
-    status: 'APPROVED',
-    riskScore: 12,
-    riskLevel: 'LOW',
-    description: 'Emergency Cardiac Stent Procedure',
-  },
-  {
-    id: 2,
-    claimNumber: 'CLM-8002',
-    patientName: 'Sarah Connor',
-    policyTitle: 'Family Care Plus',
-    policyId: 2,
-    claimAmount: 24800.0,
-    hospital: 'St. Jude Medical Center',
-    date: '2026-10-01',
-    status: 'PENDING',
-    riskScore: 18,
-    riskLevel: 'LOW',
-    description: 'ICU Admission and Diagnostic Scans',
-  },
-  {
-    id: 3,
-    claimNumber: 'CLM-8003',
-    patientName: 'John Doe',
-    policyTitle: 'Comprehensive Health Shield',
-    policyId: 1,
-    claimAmount: 450.0,
-    hospital: 'City General Hospital',
-    date: '2026-10-02',
-    status: 'APPROVED',
-    riskScore: 8,
-    riskLevel: 'LOW',
-    description: 'Outpatient Specialist Consultation',
-  },
-  {
-    id: 4,
-    claimNumber: 'CLM-8004',
-    patientName: 'Mike Smith',
-    policyTitle: 'Senior Citizen Support',
-    policyId: 3,
-    claimAmount: 3200.0,
-    hospital: 'Sunrise Community Clinic',
-    date: '2026-10-03',
-    status: 'REJECTED',
-    riskScore: 74,
-    riskLevel: 'HIGH',
-    description: 'Elective non-covered procedure',
-  },
-];
-
 const DashboardOverview = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [recentClaims, setRecentClaims] = useState(fallbackClaims);
+  const [recentClaims, setRecentClaims] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [selectedClaimForAi, setSelectedClaimForAi] = useState(null);
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
   const [initialAssistantAction, setInitialAssistantAction] = useState(null);
@@ -131,31 +53,61 @@ const DashboardOverview = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const statsRes = await adminService.getDashboardStats().catch(() => null);
+      const [statsRes, claimsRes, paymentsRes, policiesRes, usersRes] = await Promise.all([
+        adminService.getDashboardStats().catch(() => null),
+        claimService.getAllClaims().catch(() => null),
+        paymentService.getAllPayments().catch(() => null),
+        policyService.getAllPolicies().catch(() => null),
+        adminService.getAllUsers().catch(() => null),
+      ]);
+
       if (statsRes && statsRes.data) {
         setStats(statsRes.data);
       }
 
-      const claimsRes = await claimService.getAllClaims().catch(() => null);
-      if (claimsRes && claimsRes.data && Array.isArray(claimsRes.data) && claimsRes.data.length > 0) {
+      if (paymentsRes && paymentsRes.data && Array.isArray(paymentsRes.data)) {
+        setPayments(paymentsRes.data);
+      } else {
+        setPayments([]);
+      }
+
+      const userMap = {};
+      if (usersRes && usersRes.data && Array.isArray(usersRes.data)) {
+        usersRes.data.forEach((u) => {
+          userMap[u.id] = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username;
+        });
+      }
+
+      const policyMap = {};
+      if (policiesRes && policiesRes.data && Array.isArray(policiesRes.data)) {
+        policiesRes.data.forEach((p) => {
+          policyMap[p.id] = p.title || p.policyNumber;
+        });
+      }
+
+      if (claimsRes && claimsRes.data && Array.isArray(claimsRes.data)) {
         const formatted = claimsRes.data.map((c, i) => ({
           id: c.id,
           claimNumber: c.claimNumber || `CLM-800${c.id}`,
-          patientName: c.userId === 1 ? 'John Doe' : c.userId === 2 ? 'Sarah Connor' : 'Mike Smith',
-          policyTitle: c.policyId === 1 ? 'Comprehensive Health Shield' : 'Family Care Plus',
-          policyId: c.policyId || 1,
+          patientName: userMap[c.userId] || `User #${c.userId || c.id}`,
+          policyTitle: policyMap[c.policyId] || (c.policyId ? `Policy #${c.policyId}` : 'Health Policy'),
+          policyId: c.policyId,
           claimAmount: Number(c.claimAmount) || 0,
-          hospital: c.id % 2 === 0 ? 'St. Jude Medical Center' : 'City General Hospital',
-          date: c.createdAt ? c.createdAt.substring(0, 10) : '2026-10-01',
+          hospital: c.hospitalName || 'Network Hospital',
+          date: c.createdAt ? c.createdAt.substring(0, 10) : 'N/A',
           status: c.status || 'PENDING',
-          riskScore: c.status === 'REJECTED' ? 74 : 14 + (i * 3),
-          riskLevel: c.status === 'REJECTED' ? 'HIGH' : 'LOW',
+          riskScore: c.status === 'REJECTED' ? 74 : (c.riskScore ?? (14 + ((i % 5) * 3))),
+          riskLevel: c.status === 'REJECTED' ? 'HIGH' : (c.riskLevel || 'LOW'),
           description: c.description || 'Medical treatment claim',
         }));
         setRecentClaims(formatted);
+      } else {
+        setRecentClaims([]);
       }
     } catch (err) {
-      console.warn('Using seeded dashboard defaults', err);
+      console.warn('Failed to load dashboard data from database:', err);
+      setRecentClaims([]);
+      setPayments([]);
     } finally {
       setLoading(false);
     }
@@ -164,6 +116,46 @@ const DashboardOverview = () => {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const claimsTrendData = React.useMemo(() => {
+    if (!recentClaims.length) {
+      return [{ month: 'Current', claims: 0, approved: 0, pending: 0 }];
+    }
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const grouped = {};
+    recentClaims.forEach((c) => {
+      const d = c.date && c.date !== 'N/A' ? new Date(c.date) : new Date();
+      const mName = isNaN(d.getTime()) ? 'Current' : months[d.getMonth()];
+      if (!grouped[mName]) grouped[mName] = { month: mName, claims: 0, approved: 0, pending: 0 };
+      grouped[mName].claims += 1;
+      if (c.status === 'APPROVED' || c.status === 'SETTLED') {
+        grouped[mName].approved += 1;
+      } else if (c.status === 'PENDING' || c.status === 'SUBMITTED' || c.status === 'UNDER_REVIEW') {
+        grouped[mName].pending += 1;
+      }
+    });
+    return Object.values(grouped);
+  }, [recentClaims]);
+
+  const paymentAnalyticsData = React.useMemo(() => {
+    if (!payments.length) {
+      return [{ month: 'Current', volume: 0, payouts: 0 }];
+    }
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const grouped = {};
+    payments.forEach((p) => {
+      const d = p.createdAt ? new Date(p.createdAt) : new Date();
+      const mName = isNaN(d.getTime()) ? 'Current' : months[d.getMonth()];
+      if (!grouped[mName]) grouped[mName] = { month: mName, volume: 0, payouts: 0 };
+      const amt = Number(p.amount) || 0;
+      if (p.claimId || p.type === 'CLAIM_PAYOUT') {
+        grouped[mName].payouts += amt;
+      } else {
+        grouped[mName].volume += amt;
+      }
+    });
+    return Object.values(grouped);
+  }, [payments]);
 
   const openAssistantWithAction = (actionId) => {
     setInitialAssistantAction(actionId);
@@ -184,7 +176,6 @@ const DashboardOverview = () => {
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
                 Health Insurance Management
               </span>
-              <span className="text-xs text-slate-500">• MLBB2G209</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
               Dashboard Overview
@@ -229,14 +220,14 @@ const DashboardOverview = () => {
           </div>
           <div className="mt-3 flex items-baseline justify-between">
             <span className="text-2xl sm:text-3xl font-bold text-slate-900">
-              {stats ? stats.totalPolicies : 4}
+              {loading ? '...' : (stats ? stats.totalPolicies : 0)}
             </span>
             <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              <ArrowUpRight className="w-3.5 h-3.5" /> +12% MoM
+              <ArrowUpRight className="w-3.5 h-3.5" /> Live
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-2">
-            {stats ? `${stats.activePolicies || 3} currently active` : '3 Active • 1 Review'}
+            {stats ? `${stats.activePolicies || 0} active policies` : (loading ? 'Loading...' : '0 Active policies')}
           </p>
         </div>
 
@@ -250,14 +241,14 @@ const DashboardOverview = () => {
           </div>
           <div className="mt-3 flex items-baseline justify-between">
             <span className="text-2xl sm:text-3xl font-bold text-slate-900">
-              {stats ? stats.totalClaims : 4}
+              {loading ? '...' : (stats ? stats.totalClaims : 0)}
             </span>
             <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-              Active
+              Live
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-2">
-            {stats ? `Volume: ${formatCurrency(stats.totalClaimAmount)}` : 'Volume: $40,950.00'}
+            {stats ? `Volume: ${formatCurrency(stats.totalClaimAmount)}` : (loading ? 'Loading...' : 'Volume: $0.00')}
           </p>
         </div>
 
@@ -271,14 +262,14 @@ const DashboardOverview = () => {
           </div>
           <div className="mt-3 flex items-baseline justify-between">
             <span className="text-2xl sm:text-3xl font-bold text-slate-900">
-              {stats ? stats.pendingClaims : 1}
+              {loading ? '...' : (stats ? stats.pendingClaims : 0)}
             </span>
             <span className="text-xs font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-              Avg SLA: 2.4 hrs
+              Review Queue
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-2">
-            1 Fast-track eligible claim ready
+            {stats ? `${stats.pendingClaims || 0} claims awaiting approval` : (loading ? 'Loading...' : '0 pending')}
           </p>
         </div>
 
@@ -292,14 +283,14 @@ const DashboardOverview = () => {
           </div>
           <div className="mt-3 flex items-baseline justify-between">
             <span className="text-2xl sm:text-3xl font-bold text-emerald-700">
-              {stats ? formatCurrency(stats.totalPaymentAmount) : '$14,400.00'}
+              {stats ? formatCurrency(stats.totalPaymentAmount) : (loading ? 'Loading...' : '$0.00')}
             </span>
             <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              <ArrowUpRight className="w-3.5 h-3.5" /> 98.4%
+              <ArrowUpRight className="w-3.5 h-3.5" /> Disbursed
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-2">
-            {stats ? `${stats.totalPayments || 4} settled transactions` : '4 settled transactions'}
+            {stats ? `${stats.totalPayments || 0} settled transactions` : (loading ? 'Loading...' : '0 settled transactions')}
           </p>
         </div>
       </div>
@@ -494,58 +485,73 @@ const DashboardOverview = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {recentClaims.map((claim) => (
-                <tr key={claim.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-3.5 font-mono font-bold text-slate-800">
-                    {claim.claimNumber}
-                  </td>
-                  <td className="py-3 px-3.5">
-                    <div className="font-semibold text-slate-900">{claim.patientName}</div>
-                    <div className="text-[11px] text-slate-500">{claim.policyTitle}</div>
-                  </td>
-                  <td className="py-3 px-3.5 text-slate-600">
-                    {claim.hospital}
-                  </td>
-                  <td className="py-3 px-3.5 font-bold text-slate-900">
-                    ${Number(claim.claimAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </td>
-                  <td className="py-3 px-3.5">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-                      claim.status === 'APPROVED'
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        : claim.status === 'REJECTED'
-                        ? 'bg-red-50 text-red-800 border-red-200'
-                        : 'bg-amber-50 text-amber-800 border-amber-200'
-                    }`}>
-                      {claim.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-14 bg-slate-100 rounded-full h-2 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${
-                            claim.riskScore < 30 ? 'bg-emerald-600' : 'bg-red-600'
-                          }`}
-                          style={{ width: `${claim.riskScore}%` }}
-                        />
-                      </div>
-                      <span className={`text-xs font-bold ${claim.riskScore < 30 ? 'text-emerald-700' : 'text-red-700'}`}>
-                        {claim.riskScore}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-3.5 text-right">
-                    <button
-                      onClick={() => setSelectedClaimForAi(claim)}
-                      className="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                      AI Analysis
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="py-10 text-center text-slate-500">
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-emerald-600" />
+                    Retrieving claims from database...
                   </td>
                 </tr>
-              ))}
+              ) : recentClaims.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="py-10 text-center text-slate-500">
+                    No claim records registered in database yet.
+                  </td>
+                </tr>
+              ) : (
+                recentClaims.map((claim) => (
+                  <tr key={claim.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-3.5 font-mono font-bold text-slate-800">
+                      {claim.claimNumber}
+                    </td>
+                    <td className="py-3 px-3.5">
+                      <div className="font-semibold text-slate-900">{claim.patientName}</div>
+                      <div className="text-[11px] text-slate-500">{claim.policyTitle}</div>
+                    </td>
+                    <td className="py-3 px-3.5 text-slate-600">
+                      {claim.hospital}
+                    </td>
+                    <td className="py-3 px-3.5 font-bold text-slate-900">
+                      ${Number(claim.claimAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 px-3.5">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                        claim.status === 'APPROVED'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : claim.status === 'REJECTED'
+                          ? 'bg-red-50 text-red-800 border-red-200'
+                          : 'bg-amber-50 text-amber-800 border-amber-200'
+                      }`}>
+                        {claim.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-14 bg-slate-100 rounded-full h-2 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              claim.riskScore < 30 ? 'bg-emerald-600' : 'bg-red-600'
+                            }`}
+                            style={{ width: `${claim.riskScore}%` }}
+                          />
+                        </div>
+                        <span className={`text-xs font-bold ${claim.riskScore < 30 ? 'text-emerald-700' : 'text-red-700'}`}>
+                          {claim.riskScore}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-3.5 text-right">
+                      <button
+                        onClick={() => setSelectedClaimForAi(claim)}
+                        className="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                        AI Analysis
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -562,7 +568,7 @@ const DashboardOverview = () => {
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-900">AI Business Insights</h3>
-                <p className="text-xs text-slate-500">Automated underwriting and operational analysis</p>
+                <p className="text-xs text-slate-500">Automated underwriting and operational analysis from database</p>
               </div>
             </div>
           </div>
@@ -574,23 +580,23 @@ const DashboardOverview = () => {
                 <TrendingUp className="w-4 h-4 text-blue-600" />
               </div>
               <p className="text-xs text-slate-900 font-bold leading-snug">
-                "Claims increased by 12% this month."
+                {stats ? `${stats.totalClaims || 0} claims recorded` : 'Loading volume...'}
               </p>
               <p className="text-[11px] text-slate-500">
-                Driven by seasonal respiratory admissions; solvency reserves remain healthy.
+                {stats ? `Total volume is ${formatCurrency(stats.totalClaimAmount)} across underwritten policies.` : 'Synchronizing portfolio...'}
               </p>
             </div>
 
             <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800">Hospital Risk</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800">Hospital Network</span>
                 <AlertTriangle className="w-4 h-4 text-amber-700" />
               </div>
               <p className="text-xs text-slate-900 font-bold leading-snug">
-                "High-risk claims are concentrated in Hospital Network A."
+                {stats ? `${stats.networkHospitals || 0} empanelled hospitals` : 'Loading network...'}
               </p>
               <p className="text-[11px] text-slate-500">
-                Flagged 2 billing code variations for audit at Sunrise Community facility.
+                {stats ? `${stats.pendingClaims || 0} claims pending review in provider network.` : 'Tracking facilities...'}
               </p>
             </div>
 
@@ -600,10 +606,10 @@ const DashboardOverview = () => {
                 <CheckCircle2 className="w-4 h-4 text-emerald-700" />
               </div>
               <p className="text-xs text-slate-900 font-bold leading-snug">
-                "Payment delays decreased by 8%."
+                {stats ? `${stats.totalPayments || 0} settled transactions` : 'Loading settlements...'}
               </p>
               <p className="text-[11px] text-slate-500">
-                Automated direct deposit clearing shortened average payout time to 4.2 hours.
+                {stats ? `Disbursed volume is ${formatCurrency(stats.totalPaymentAmount)}.` : 'Reconciliation active.'}
               </p>
             </div>
           </div>
@@ -616,45 +622,30 @@ const DashboardOverview = () => {
               <Clock className="w-4 h-4 text-slate-500" />
               System Activity
             </h3>
-            <span className="text-xs text-slate-400">Live</span>
+            <span className="text-xs text-slate-400">Live DB</span>
           </div>
 
           <div className="space-y-3.5 text-xs">
-            <div className="flex gap-3 items-start">
-              <div className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
-              <div>
-                <span className="font-semibold text-slate-800 block">Claim #CLM-8001 Disbursed</span>
-                <span className="text-slate-500 text-[11px]">Payout of $12,500.00 completed</span>
-                <span className="text-slate-400 text-[10px] block mt-0.5">15 mins ago</span>
+            {stats && stats.recentAuditLogs && stats.recentAuditLogs.length > 0 ? (
+              stats.recentAuditLogs.slice(0, 4).map((log) => (
+                <div key={log.id} className="flex gap-3 items-start">
+                  <div className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
+                  <div>
+                    <span className="font-semibold text-slate-800 block">
+                      @{log.username} - {log.action}
+                    </span>
+                    <span className="text-slate-500 text-[11px]">{log.description}</span>
+                    <span className="text-slate-400 text-[10px] block mt-0.5">
+                      {log.timestamp ? new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent'}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-6 text-center text-slate-400 text-xs">
+                No recent activity records found.
               </div>
-            </div>
-
-            <div className="flex gap-3 items-start">
-              <div className="w-2 h-2 rounded-full bg-blue-600 mt-1.5 shrink-0" />
-              <div>
-                <span className="font-semibold text-slate-800 block">Claim #CLM-8002 Audited</span>
-                <span className="text-slate-500 text-[11px]">Passed OCR check (Low Risk: 18%)</span>
-                <span className="text-slate-400 text-[10px] block mt-0.5">42 mins ago</span>
-              </div>
-            </div>
-
-            <div className="flex gap-3 items-start">
-              <div className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
-              <div>
-                <span className="font-semibold text-slate-800 block">New Policy Enrolled</span>
-                <span className="text-slate-500 text-[11px]">Comprehensive Health Shield</span>
-                <span className="text-slate-400 text-[10px] block mt-0.5">2 hours ago</span>
-              </div>
-            </div>
-
-            <div className="flex gap-3 items-start">
-              <div className="w-2 h-2 rounded-full bg-red-600 mt-1.5 shrink-0" />
-              <div>
-                <span className="font-semibold text-slate-800 block">Anomaly Flagged on CLM-8004</span>
-                <span className="text-slate-500 text-[11px]">Elective care not authorized</span>
-                <span className="text-slate-400 text-[10px] block mt-0.5">3 hours ago</span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

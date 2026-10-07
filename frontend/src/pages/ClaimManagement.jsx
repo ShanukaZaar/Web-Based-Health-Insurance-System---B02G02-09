@@ -23,85 +23,11 @@ import {
 } from 'lucide-react';
 import claimService from '../services/claimService';
 import AiClaimAnalysisModal from '../components/ai/AiClaimAnalysisModal';
-
-const fallbackClaims = [
-  {
-    id: 1,
-    claimNumber: 'CLM-8001',
-    userId: 1,
-    policyId: 1,
-    patientName: 'John Doe',
-    policyTitle: 'Comprehensive Health Shield',
-    claimAmount: 12500.0,
-    approvedAmount: 12500.0,
-    hospital: 'City General Hospital',
-    status: 'APPROVED',
-    riskScore: 12,
-    riskLevel: 'LOW',
-    createdAt: '2026-09-28T10:15:00',
-    description: 'Emergency Cardiac Stent Procedure at City Hospital',
-    documentPath: '/uploads/claims/clm_8001_cardiac.pdf',
-    reviewedAt: '2026-09-29T14:20:00'
-  },
-  {
-    id: 2,
-    claimNumber: 'CLM-8002',
-    userId: 2,
-    policyId: 2,
-    patientName: 'Sarah Connor',
-    policyTitle: 'Family Care Plus',
-    claimAmount: 24800.0,
-    approvedAmount: 0.0,
-    hospital: 'St. Jude Medical Center',
-    status: 'PENDING',
-    riskScore: 18,
-    riskLevel: 'LOW',
-    createdAt: '2026-10-01T08:30:00',
-    description: 'ICU Admission and Diagnostic Computed Tomography Scans',
-    documentPath: '/uploads/claims/clm_8002_icu_scan.pdf',
-    reviewedAt: null
-  },
-  {
-    id: 3,
-    claimNumber: 'CLM-8003',
-    userId: 1,
-    policyId: 1,
-    patientName: 'John Doe',
-    policyTitle: 'Comprehensive Health Shield',
-    claimAmount: 450.0,
-    approvedAmount: 450.0,
-    hospital: 'City General Hospital',
-    status: 'APPROVED',
-    riskScore: 8,
-    riskLevel: 'LOW',
-    createdAt: '2026-10-02T11:45:00',
-    description: 'Outpatient Specialist Consultation with Cardiologist',
-    documentPath: '/uploads/claims/clm_8003_consult.pdf',
-    reviewedAt: '2026-10-02T16:00:00'
-  },
-  {
-    id: 4,
-    claimNumber: 'CLM-8004',
-    userId: 3,
-    policyId: 3,
-    patientName: 'Mike Smith',
-    policyTitle: 'Senior Citizen Support',
-    claimAmount: 3200.0,
-    approvedAmount: 0.0,
-    hospital: 'Sunrise Community Clinic',
-    status: 'REJECTED',
-    riskScore: 74,
-    riskLevel: 'HIGH',
-    createdAt: '2026-10-03T15:20:00',
-    description: 'Elective non-covered dermatological laser treatment',
-    rejectionReason: 'Non-covered elective procedure under basic terms',
-    documentPath: '/uploads/claims/clm_8004_laser.pdf',
-    reviewedAt: '2026-10-04T09:10:00'
-  },
-];
+import { useToast } from '../context/ToastContext';
 
 const ClaimManagement = () => {
-  const [claims, setClaims] = useState(fallbackClaims);
+  const { showToast } = useToast();
+  const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -125,20 +51,23 @@ const ClaimManagement = () => {
     setLoading(true);
     try {
       const res = await claimService.getAllClaims();
-      if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (res && res.data && Array.isArray(res.data)) {
         const enriched = res.data.map((c, i) => ({
           ...c,
           claimNumber: c.claimNumber || `CLM-800${c.id}`,
-          patientName: c.userId === 1 ? 'John Doe' : c.userId === 2 ? 'Sarah Connor' : 'Mike Smith',
-          policyTitle: c.policyId === 1 ? 'Comprehensive Health Shield' : 'Family Care Plus',
+          patientName: c.userId === 1 ? 'John Doe' : c.userId === 2 ? 'Sarah Connor' : c.userId === 3 ? 'Mike Smith' : `User #${c.userId}`,
+          policyTitle: c.policyId === 1 ? 'Comprehensive Health Shield' : c.policyId === 2 ? 'Family Care Plus' : c.policyId === 3 ? 'Senior Citizen Support' : `Policy #${c.policyId}`,
           hospital: c.id % 2 === 0 ? 'St. Jude Medical Center' : 'City General Hospital',
-          riskScore: c.status === 'REJECTED' ? 74 : 12 + (i * 4),
+          riskScore: c.status === 'REJECTED' ? 74 : 12 + ((i % 5) * 4),
           riskLevel: c.status === 'REJECTED' ? 'HIGH' : 'LOW',
         }));
         setClaims(enriched);
+      } else {
+        setClaims([]);
       }
     } catch (err) {
-      console.warn('API returned fallback claims:', err);
+      console.error('Failed to load claims from backend:', err);
+      setClaims([]);
     } finally {
       setLoading(false);
     }
@@ -147,6 +76,10 @@ const ClaimManagement = () => {
   useEffect(() => {
     fetchClaims();
   }, []);
+
+  const formatCurrency = (amt) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(amt) || 0);
+  };
 
   const handleFileClaim = async (e) => {
     e.preventDefault();
@@ -161,32 +94,93 @@ const ClaimManagement = () => {
         description: newClaim.description,
       };
 
-      await claimService.submitClaim(payload).catch(() => null);
-      
-      const created = {
-        id: claims.length + 1,
-        claimNumber: `CLM-800${claims.length + 1}`,
-        userId: payload.userId,
-        policyId: payload.policyId,
-        patientName: 'John Doe',
-        policyTitle: payload.policyId === 1 ? 'Comprehensive Health Shield' : 'Family Care Plus',
-        claimAmount: payload.claimAmount,
-        approvedAmount: 0.0,
-        hospital: newClaim.hospital,
-        status: 'PENDING',
-        riskScore: 16,
-        riskLevel: 'LOW',
-        createdAt: new Date().toISOString(),
-        description: payload.description,
-      };
-
-      setClaims([created, ...claims]);
+      const res = await claimService.submitClaim(payload);
+      const claimRef = res?.data?.data?.claimNumber || res?.data?.claimNumber || 'Submitted';
       setShowFileModal(false);
       setNewClaim({ userId: 1, policyId: 1, claimAmount: '', description: '', hospital: 'City General Hospital' });
+      fetchClaims();
+      showToast(
+        `Claim for ${formatCurrency(payload.claimAmount)} at ${newClaim.hospital} submitted successfully for review (ID: ${claimRef}).`,
+        'success',
+        'Claim Submitted'
+      );
     } catch (err) {
-      alert('Failed to submit claim.');
+      showToast(
+        'Failed to submit claim: ' + (err.response?.data?.message || err.message),
+        'error',
+        'Submission Error'
+      );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleApproveClaim = async (claim) => {
+    try {
+      await claimService.approveClaim(claim.id, claim.claimAmount);
+      fetchClaims();
+      if (selectedClaimDetails && selectedClaimDetails.id === claim.id) {
+        setSelectedClaimDetails(null);
+      }
+      showToast(
+        `Claim ${claim.claimNumber} approved for ${formatCurrency(claim.claimAmount)} payout. Adjudication record stored.`,
+        'success',
+        'Claim Approved'
+      );
+    } catch (err) {
+      showToast(
+        'Failed to approve claim: ' + (err.response?.data?.message || err.message),
+        'error',
+        'Approval Error'
+      );
+    }
+  };
+
+  const handleRejectClaim = async (claim) => {
+    const reason = window.prompt(
+      `Enter reason for rejecting claim ${claim.claimNumber}:`,
+      'Non-covered medical procedure or documentation discrepancy'
+    );
+    if (!reason) return;
+    try {
+      await claimService.rejectClaim(claim.id, reason);
+      fetchClaims();
+      if (selectedClaimDetails && selectedClaimDetails.id === claim.id) {
+        setSelectedClaimDetails(null);
+      }
+      showToast(
+        `Claim ${claim.claimNumber} has been rejected. Reason logged: "${reason}".`,
+        'warning',
+        'Claim Rejected'
+      );
+    } catch (err) {
+      showToast(
+        'Failed to reject claim: ' + (err.response?.data?.message || err.message),
+        'error',
+        'Rejection Error'
+      );
+    }
+  };
+
+  const handleWithdrawClaim = async (claim) => {
+    if (!window.confirm(`Are you sure you want to withdraw claim ${claim.claimNumber}?`)) return;
+    try {
+      await claimService.withdrawClaim(claim.id);
+      fetchClaims();
+      if (selectedClaimDetails && selectedClaimDetails.id === claim.id) {
+        setSelectedClaimDetails(null);
+      }
+      showToast(
+        `Claim ${claim.claimNumber} has been withdrawn successfully.`,
+        'info',
+        'Claim Withdrawn'
+      );
+    } catch (err) {
+      showToast(
+        'Failed to withdraw claim: ' + (err.response?.data?.message || err.message),
+        'error',
+        'Withdrawal Error'
+      );
     }
   };
 
@@ -218,7 +212,6 @@ const ClaimManagement = () => {
             <span className="text-xs font-bold text-blue-800 uppercase tracking-widest bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
               Claim Management
             </span>
-            <span className="text-xs text-slate-500">• MLBB2G209</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5 mt-2">
             <FileText className="w-7 h-7 text-blue-600" />
@@ -330,10 +323,17 @@ const ClaimManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredClaims.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
-                    No claims match your filter criteria.
+                  <td colSpan={8} className="py-12 text-center text-slate-500">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-600" />
+                    Loading claims from database...
+                  </td>
+                </tr>
+              ) : filteredClaims.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-slate-500">
+                    No claims found in database. Click "File New Claim" to submit a claim.
                   </td>
                 </tr>
               ) : (
@@ -405,7 +405,25 @@ const ClaimManagement = () => {
 
                     {/* Actions */}
                     <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {claim.status === 'PENDING' && (
+                          <>
+                            <button
+                              onClick={() => handleApproveClaim(claim)}
+                              className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors border border-emerald-200"
+                              title="Approve Claim"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleRejectClaim(claim)}
+                              className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg transition-colors border border-rose-200"
+                              title="Reject Claim"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                         {/* AI Analysis Button (Secondary Blue) */}
                         <button
                           onClick={() => setSelectedClaimForAi(claim)}
@@ -477,20 +495,43 @@ const ClaimManagement = () => {
               <p className="text-slate-800">{selectedClaimDetails.description}</p>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
               <button
                 onClick={() => setSelectedClaimDetails(null)}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-semibold"
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold"
               >
                 Close
               </button>
+              {selectedClaimDetails.status === 'PENDING' && (
+                <>
+                  <button
+                    onClick={() => handleWithdrawClaim(selectedClaimDetails)}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold"
+                  >
+                    Withdraw
+                  </button>
+                  <button
+                    onClick={() => handleRejectClaim(selectedClaimDetails)}
+                    className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-2 rounded-lg text-xs font-semibold"
+                  >
+                    Reject Claim
+                  </button>
+                  <button
+                    onClick={() => handleApproveClaim(selectedClaimDetails)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-1"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Approve Claim
+                  </button>
+                </>
+              )}
               <button
                 onClick={() => {
                   const claim = selectedClaimDetails;
                   setSelectedClaimDetails(null);
                   setSelectedClaimForAi(claim);
                 }}
-                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-semibold"
+                className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 Launch Diagnosis

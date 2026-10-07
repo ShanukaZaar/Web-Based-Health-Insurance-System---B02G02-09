@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Plus, Download, Trash2, Search, Filter, RefreshCw, X, CheckCircle } from 'lucide-react';
 import adminService from '../../services/adminService';
+import { useToast } from '../../context/ToastContext';
 
 const ReportManagementSection = () => {
+  const { showToast } = useToast();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -50,8 +52,17 @@ const ReportManagementSection = () => {
       setShowGenerateModal(false);
       setNewTitle('');
       fetchReports();
+      showToast(
+        `System report "${payload.reportTitle}" (${payload.reportType}) generated and indexed successfully.`,
+        'success',
+        'Report Generated'
+      );
     } catch (err) {
-      alert('Failed to generate system report.');
+      showToast(
+        'Failed to generate system report: ' + (err?.response?.data?.message || err.message),
+        'error',
+        'Generation Error'
+      );
     } finally {
       setGenerating(false);
     }
@@ -62,8 +73,17 @@ const ReportManagementSection = () => {
     try {
       await adminService.deleteReport(id);
       fetchReports();
+      showToast(
+        `Report record #${id} removed from system catalog.`,
+        'info',
+        'Report Deleted'
+      );
     } catch (err) {
-      alert('Failed to delete report.');
+      showToast(
+        'Failed to delete report: ' + (err?.response?.data?.message || err.message),
+        'error',
+        'Deletion Error'
+      );
     }
   };
 
@@ -77,8 +97,17 @@ const ReportManagementSection = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      showToast(
+        `CSV export file for "${report.reportTitle}" downloaded successfully.`,
+        'success',
+        'Report Exported'
+      );
     } catch (err) {
-      alert('Failed to download CSV export.');
+      showToast(
+        'Failed to download CSV export: ' + (err?.response?.data?.message || err.message),
+        'error',
+        'Export Failed'
+      );
     }
   };
 

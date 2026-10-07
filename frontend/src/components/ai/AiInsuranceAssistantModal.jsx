@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   X, 
@@ -12,6 +12,9 @@ import {
   HelpCircle,
   RefreshCw
 } from 'lucide-react';
+import claimService from '../../services/claimService';
+import policyService from '../../services/policyService';
+import adminService from '../../services/adminService';
 
 const QUICK_ACTIONS = [
   { id: 'analyze_claim', title: 'Analyze Claim', desc: 'Scan claim documents & risk flags', icon: FileCheck2, color: 'text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100' },
@@ -23,7 +26,7 @@ const QUICK_ACTIONS = [
 const INITIAL_MESSAGES = [
   {
     sender: 'ai',
-    text: "Hello! I am your CarePulse Insurance Assistant. How can I help you today? You can select a diagnostic action below or ask any question about policies, claims, or coverage rules.",
+    text: "Hello! I am your Health Insurance Assistant. How can I help you today? You can select a diagnostic action below or ask any question about policies, claims, or coverage rules from the database.",
     time: 'Just now',
   }
 ];
@@ -32,6 +35,28 @@ export const AiInsuranceAssistantModal = ({ isOpen, onClose, initialAction = nul
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [inputValue, setInputValue] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [dbData, setDbData] = useState({ claims: [], policies: [], stats: null });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const loadContext = async () => {
+      try {
+        const [cRes, pRes, sRes] = await Promise.all([
+          claimService.getAllClaims().catch(() => null),
+          policyService.getAllPolicies().catch(() => null),
+          adminService.getDashboardStats().catch(() => null),
+        ]);
+        setDbData({
+          claims: (cRes && cRes.data && Array.isArray(cRes.data)) ? cRes.data : [],
+          policies: (pRes && pRes.data && Array.isArray(pRes.data)) ? pRes.data : [],
+          stats: (sRes && sRes.data) ? sRes.data : null,
+        });
+      } catch (err) {
+        console.warn('Failed to load DB context for assistant:', err);
+      }
+    };
+    loadContext();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -39,38 +64,53 @@ export const AiInsuranceAssistantModal = ({ isOpen, onClose, initialAction = nul
     let queryText = '';
     let responseText = '';
 
+    const latestClaim = dbData.claims && dbData.claims.length > 0 ? dbData.claims[0] : null;
+    const latestPolicy = dbData.policies && dbData.policies.length > 0 ? dbData.policies[0] : null;
+
     if (actionId === 'analyze_claim') {
-      queryText = 'Analyze Claim #CLM-8002 (ICU Admission & Scans)';
-      responseText = `Claim Diagnostic for CLM-8002:
-• Patient/Policy: Sarah Connor (POL-1002 - Family Care Plus)
-• Claimed Amount: $24,800.00
-• Risk Score: 14% (Low Risk)
-• Document Integrity: 3/3 verified (Discharge Summary, Itemized Hospital Bill, Prescription)
-• Coverage Check: In-network ICU hospitalization covered under $1,000,000 limit.
-• Recommendation: Eligible for Standard Approval. No anomalous billing patterns detected.`;
+      if (latestClaim) {
+        queryText = `Analyze Claim #${latestClaim.claimNumber || latestClaim.id}`;
+        responseText = `Claim Diagnostic for #${latestClaim.claimNumber || latestClaim.id}:
+• Claim ID: ${latestClaim.id} (Policy #${latestClaim.policyId || 'N/A'})
+• Claim Amount: $${Number(latestClaim.claimAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+• Status: ${latestClaim.status || 'PENDING'}
+• Description: ${latestClaim.description || 'Medical service'}
+• Risk Level: ${latestClaim.status === 'REJECTED' ? 'HIGH RISK' : 'LOW RISK'}
+• Audit Verdict: ${latestClaim.status === 'REJECTED' ? 'Flagged: ' + (latestClaim.rejectionReason || 'Elective treatment not authorized') : 'Eligible under policy terms. No fraud anomalies flagged.'}`;
+      } else {
+        queryText = 'Analyze Claim';
+        responseText = 'No claims are currently recorded in the database. Please file a claim in the Claims module first.';
+      }
     } else if (actionId === 'check_policy') {
-      queryText = 'Check Policy POL-1001 Eligibility & Limits';
-      responseText = `Policy Portfolio Insight for POL-1001:
-• Title: Comprehensive Health Shield (Individual Tier)
-• Coverage Cap: $500,000.00
-• Used Claims YTD: $12,950.00 (2.6% Utilization)
-• Remaining Cap: $487,050.00
-• Renewal Status: Active (Expires in 284 days). Auto-renewal eligibility: 98%.
-• Recommendation: Plan is in good standing with low loss ratio.`;
+      if (latestPolicy) {
+        queryText = `Check Policy ${latestPolicy.policyNumber || latestPolicy.id} (${latestPolicy.title || 'Health Policy'})`;
+        responseText = `Policy Portfolio Insight for ${latestPolicy.title || 'Policy'}:
+• Policy Number: ${latestPolicy.policyNumber || 'POL-' + latestPolicy.id}
+• Policy Type: ${latestPolicy.policyType || 'COMPREHENSIVE'}
+• Coverage Cap: $${Number(latestPolicy.coverageAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+• Annual Premium: $${Number(latestPolicy.premiumAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+• Status: ${latestPolicy.status || 'ACTIVE'}
+• Terms: Plan is active in database and ready for subscriber claims.`;
+      } else {
+        queryText = 'Check Policy';
+        responseText = 'No policies currently registered in the database. Add a policy in Policy Management.';
+      }
     } else if (actionId === 'explain_coverage') {
-      queryText = 'Explain Coverage Inclusions for Outpatient & Diagnostic Care';
-      responseText = `Coverage Breakdown & Inclusions:
-• Inpatient Care: 100% covered after $200 deductible across Tier-1 Network Hospitals.
-• Outpatient Consultations: Covered up to $2,500/year with $25 co-pay.
-• Pre-existing Conditions: Covered after 12 months continuous active policy status.
-• Exclusions: Cosmetic procedures, experimental treatments without prior authorization.`;
+      queryText = 'Explain Coverage Inclusions for Outpatient & Hospital Care';
+      responseText = `Coverage Breakdown & Policy Inclusions:
+• Inpatient Care: 100% covered after deductible across accredited Network Hospitals.
+• Outpatient Consultations: Supported up to annual limits with standard co-pay.
+• Pre-existing Conditions: Covered under comprehensive tiers following waiting period.
+• Exclusions: Cosmetic procedures and experimental care without prior authorization.`;
     } else if (actionId === 'predict_risk') {
       queryText = 'Predict Systemic Claim Risk & Fraud Probability';
-      responseText = `Risk Matrix Summary:
-• Portfolio Loss Ratio: 32.4% (Healthy benchmark < 65%)
-• Active Anomaly Alert: 1 claim flagged for review (CLM-8004: Elective non-covered procedure).
-• Hospital Network Risk: City General (Low: 2.1%), St. Jude (Low: 1.8%).
-• Recommendation: Enable standard 1-click approvals for verified claims under $1,000 with itemized receipts.`;
+      const stats = dbData.stats;
+      responseText = `Systemic Risk Matrix (Live DB Data):
+• Total Claims Processed: ${stats ? stats.totalClaims : dbData.claims.length}
+• Pending Review Queue: ${stats ? stats.pendingClaims : 0}
+• Empanelled Network Hospitals: ${stats ? stats.networkHospitals : 0}
+• Total Claim Volume: $${stats ? Number(stats.totalClaimAmount || 0).toLocaleString() : '0.00'}
+• Verdict: Anomaly scoring active. Standard micro-approvals eligible for verified in-network claims.`;
     }
 
     setMessages((prev) => [
@@ -85,7 +125,7 @@ export const AiInsuranceAssistantModal = ({ isOpen, onClose, initialAction = nul
         { sender: 'ai', text: responseText, time: 'Just now' }
       ]);
       setIsThinking(false);
-    }, 500);
+    }, 400);
   };
 
   const handleSendMessage = (e) => {

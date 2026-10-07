@@ -17,7 +17,8 @@ import {
   Calendar,
   User,
   Activity,
-  X
+  X,
+  RotateCcw
 } from 'lucide-react';
 import {
   BarChart,
@@ -29,77 +30,11 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import paymentService from '../services/paymentService';
-
-const fallbackPayments = [
-  {
-    id: 1,
-    transactionId: 'TXN-9001',
-    userId: 1,
-    policyId: 1,
-    claimId: null,
-    amount: 450.0,
-    paymentMethod: 'CREDIT_CARD',
-    status: 'SUCCESSFUL',
-    type: 'PREMIUM_INFLOW',
-    customerName: 'John Doe',
-    description: 'Monthly Premium - Comprehensive Health Shield',
-    createdAt: '2026-09-30T14:10:00'
-  },
-  {
-    id: 2,
-    transactionId: 'TXN-9002',
-    userId: 2,
-    policyId: 2,
-    claimId: null,
-    amount: 850.0,
-    paymentMethod: 'BANK_TRANSFER',
-    status: 'SUCCESSFUL',
-    type: 'PREMIUM_INFLOW',
-    customerName: 'Sarah Connor',
-    description: 'Monthly Premium - Family Care Plus',
-    createdAt: '2026-10-01T09:25:00'
-  },
-  {
-    id: 3,
-    transactionId: 'TXN-9003',
-    userId: 1,
-    policyId: null,
-    claimId: 1,
-    amount: 12500.0,
-    paymentMethod: 'DIRECT_DEPOSIT',
-    status: 'COMPLETED',
-    type: 'CLAIM_PAYOUT',
-    customerName: 'John Doe',
-    description: 'Claim Settlement Disbursement (CLM-8001 Cardiac)',
-    createdAt: '2026-10-02T16:40:00'
-  },
-  {
-    id: 4,
-    transactionId: 'TXN-9004',
-    userId: 3,
-    policyId: 3,
-    claimId: null,
-    amount: 600.0,
-    paymentMethod: 'CREDIT_CARD',
-    status: 'FAILED',
-    type: 'PREMIUM_INFLOW',
-    customerName: 'Mike Smith',
-    description: 'Senior Citizen Support Plan Premium (Insufficient Funds)',
-    createdAt: '2026-10-03T11:15:00'
-  },
-];
-
-const revenueMonthlyData = [
-  { month: 'Apr', premium: 64000, payout: 38000, net: 26000 },
-  { month: 'May', premium: 72000, payout: 42000, net: 30000 },
-  { month: 'Jun', premium: 81000, payout: 51000, net: 30000 },
-  { month: 'Jul', premium: 89000, payout: 58000, net: 31000 },
-  { month: 'Aug', premium: 96000, payout: 62000, net: 34000 },
-  { month: 'Sep', premium: 104000, payout: 69000, net: 35000 },
-];
+import { useToast } from '../context/ToastContext';
 
 const PaymentManagement = () => {
-  const [payments, setPayments] = useState(fallbackPayments);
+  const { showToast } = useToast();
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -119,17 +54,20 @@ const PaymentManagement = () => {
     setLoading(true);
     try {
       const res = await paymentService.getAllPayments();
-      if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (res && res.data && Array.isArray(res.data)) {
         const enriched = res.data.map((p) => ({
           ...p,
           transactionId: p.transactionId || `TXN-900${p.id}`,
-          customerName: p.userId === 1 ? 'John Doe' : p.userId === 2 ? 'Sarah Connor' : 'Mike Smith',
+          customerName: p.userId === 1 ? 'John Doe' : p.userId === 2 ? 'Sarah Connor' : p.userId === 3 ? 'Mike Smith' : `User #${p.userId}`,
           type: p.claimId ? 'CLAIM_PAYOUT' : 'PREMIUM_INFLOW',
         }));
         setPayments(enriched);
+      } else {
+        setPayments([]);
       }
     } catch (err) {
-      console.warn('API returned fallback payments:', err);
+      console.error('Failed to load payments from backend:', err);
+      setPayments([]);
     } finally {
       setLoading(false);
     }
@@ -150,33 +88,51 @@ const PaymentManagement = () => {
         policyId: Number(newPayment.policyId),
         amount: Number(newPayment.amount),
         paymentMethod: newPayment.paymentMethod,
-        status: 'SUCCESSFUL'
-      };
-
-      await paymentService.processPayment(payload).catch(() => null);
-
-      const created = {
-        id: payments.length + 1,
-        transactionId: `TXN-900${payments.length + 1}`,
-        userId: payload.userId,
-        policyId: payload.policyId,
-        claimId: null,
-        amount: payload.amount,
-        paymentMethod: payload.paymentMethod,
         status: 'SUCCESSFUL',
-        type: 'PREMIUM_INFLOW',
-        customerName: 'John Doe',
-        description: newPayment.description || 'Premium Direct Payment',
-        createdAt: new Date().toISOString()
+        description: newPayment.description || 'Premium Direct Payment'
       };
 
-      setPayments([created, ...payments]);
+      await paymentService.processPayment(payload);
       setShowProcessModal(false);
       setNewPayment({ userId: 1, policyId: 1, amount: '', paymentMethod: 'CREDIT_CARD', description: '' });
+      fetchPayments();
+      showToast(
+        `Premium payment of ${formatCurrency(payload.amount)} processed successfully via ${payload.paymentMethod.replace('_', ' ')}. Ledger updated.`,
+        'success',
+        'Payment Processed'
+      );
     } catch (err) {
-      alert('Failed to process transaction.');
+      showToast(
+        'Failed to process transaction: ' + (err.response?.data?.message || err.message),
+        'error',
+        'Transaction Failed'
+      );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleRefundPayment = async (pm) => {
+    const reason = window.prompt(
+      `Enter reason for processing refund of ${formatCurrency(pm.amount)} (Txn: ${pm.transactionId}):`,
+      'Policy cancellation or duplicate premium deduction'
+    );
+    if (!reason) return;
+
+    try {
+      await paymentService.processRefund(pm.id, reason);
+      fetchPayments();
+      showToast(
+        `Refund of ${formatCurrency(pm.amount)} processed successfully for transaction ${pm.transactionId}.`,
+        'info',
+        'Refund Issued'
+      );
+    } catch (err) {
+      showToast(
+        'Failed to process refund: ' + (err.response?.data?.message || err.message),
+        'error',
+        'Refund Error'
+      );
     }
   };
 
@@ -198,9 +154,28 @@ const PaymentManagement = () => {
   });
 
   const totalVolume = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-  const successVolume = payments
-    .filter(p => p.status === 'SUCCESSFUL' || p.status === 'COMPLETED')
-    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const successPayments = payments.filter(p => p.status === 'SUCCESSFUL' || p.status === 'COMPLETED');
+  const successVolume = successPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const failedPayments = payments.filter(p => p.status === 'FAILED');
+  const failedVolume = failedPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+  const revenueMonthlyData = React.useMemo(() => {
+    if (!payments.length) return [{ month: 'Current', premium: 0, payout: 0 }];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const grouped = {};
+    payments.forEach((p) => {
+      const d = p.createdAt ? new Date(p.createdAt) : new Date();
+      const mName = months[d.getMonth()];
+      if (!grouped[mName]) grouped[mName] = { month: mName, premium: 0, payout: 0 };
+      const amt = Number(p.amount) || 0;
+      if (p.claimId || p.type === 'CLAIM_PAYOUT') {
+        grouped[mName].payout += amt;
+      } else {
+        grouped[mName].premium += amt;
+      }
+    });
+    return Object.values(grouped);
+  }, [payments]);
 
   const formatCurrency = (amt) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amt || 0);
@@ -215,7 +190,6 @@ const PaymentManagement = () => {
             <span className="text-xs font-bold text-emerald-800 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
               Payment Gateway & Treasury
             </span>
-            <span className="text-xs text-slate-500">• MLBB2G209</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5 mt-2">
             <CreditCard className="w-7 h-7 text-emerald-600" />
@@ -258,19 +232,19 @@ const PaymentManagement = () => {
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Disbursed Settlements</span>
           <div className="text-2xl font-bold text-emerald-700 mt-2">{formatCurrency(successVolume)}</div>
-          <span className="text-xs text-slate-500 mt-1 block">3 Successful Transfers</span>
+          <span className="text-xs text-slate-500 mt-1 block">{successPayments.length} Settled Transfers</span>
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Failed / Flagged Txns</span>
-          <div className="text-2xl font-bold text-red-700 mt-2">$600.00</div>
-          <span className="text-xs text-red-600 mt-1 block font-medium">1 Insufficient Funds alert</span>
+          <div className="text-2xl font-bold text-red-700 mt-2">{formatCurrency(failedVolume)}</div>
+          <span className="text-xs text-red-600 mt-1 block font-medium">{failedPayments.length} Flagged / Failed</span>
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Avg Settlement Time</span>
-          <div className="text-2xl font-bold text-blue-700 mt-2">4.2 Hours</div>
-          <span className="text-xs text-slate-500 mt-1 block">Direct deposit processing</span>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Ledger Records</span>
+          <div className="text-2xl font-bold text-blue-700 mt-2">{payments.length} Records</div>
+          <span className="text-xs text-slate-500 mt-1 block">Live database transactions</span>
         </div>
       </div>
 
@@ -353,47 +327,73 @@ const PaymentManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredPayments.map((pm) => (
-                <tr key={pm.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-4 font-mono font-bold text-slate-800">
-                    {pm.transactionId}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="font-semibold text-slate-900">{pm.customerName}</div>
-                    <div className="text-[11px] text-slate-500">{pm.description}</div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded ${pm.type === 'CLAIM_PAYOUT'
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                      }`}>
-                      {pm.type === 'CLAIM_PAYOUT' ? 'Claim Payout' : 'Premium Inflow'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-slate-600 font-mono text-xs">
-                    {pm.paymentMethod}
-                  </td>
-                  <td className="py-3 px-4 font-bold text-slate-900">
-                    {formatCurrency(pm.amount)}
-                  </td>
-                  <td className="py-3 px-4 text-slate-500 text-xs">
-                    {pm.createdAt ? new Date(pm.createdAt).toLocaleString() : '2026-10-01'}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${pm.status === 'SUCCESSFUL' || pm.status === 'COMPLETED'
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                      : 'bg-red-50 text-red-800 border-red-200'
-                      }`}>
-                      {pm.status === 'SUCCESSFUL' || pm.status === 'COMPLETED' ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      ) : (
-                        <XCircle className="w-3.5 h-3.5 text-red-600" />
-                      )}
-                      {pm.status}
-                    </span>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-600" />
+                    Loading financial ledger from database...
                   </td>
                 </tr>
-              ))}
+              ) : filteredPayments.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                    No transactions recorded in database.
+                  </td>
+                </tr>
+              ) : (
+                filteredPayments.map((pm) => (
+                  <tr key={pm.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-slate-800">
+                      {pm.transactionId}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-slate-900">{pm.customerName}</div>
+                      <div className="text-[11px] text-slate-500">{pm.description}</div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded ${pm.type === 'CLAIM_PAYOUT'
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        }`}>
+                        {pm.type === 'CLAIM_PAYOUT' ? 'Claim Payout' : 'Premium Inflow'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 font-mono text-xs">
+                      {pm.paymentMethod}
+                    </td>
+                    <td className="py-3 px-4 font-bold text-slate-900">
+                      {formatCurrency(pm.amount)}
+                    </td>
+                    <td className="py-3 px-4 text-slate-500 text-xs">
+                      {pm.createdAt ? new Date(pm.createdAt).toLocaleString() : '2026-10-01'}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${pm.status === 'SUCCESSFUL' || pm.status === 'COMPLETED'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-red-50 text-red-800 border-red-200'
+                          }`}>
+                          {pm.status === 'SUCCESSFUL' || pm.status === 'COMPLETED' ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          ) : (
+                            <XCircle className="w-3.5 h-3.5 text-red-600" />
+                          )}
+                          {pm.status}
+                        </span>
+                        {(pm.status === 'SUCCESSFUL' || pm.status === 'COMPLETED') && (
+                          <button
+                            onClick={() => handleRefundPayment(pm)}
+                            className="p-1 text-slate-400 hover:text-amber-700 hover:bg-amber-50 rounded transition-colors"
+                            title="Process Refund"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

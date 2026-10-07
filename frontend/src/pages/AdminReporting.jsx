@@ -35,46 +35,21 @@ import {
   Legend
 } from 'recharts';
 import adminService from '../services/adminService';
+import claimService from '../services/claimService';
+import paymentService from '../services/paymentService';
+import hospitalService from '../services/hospitalService';
 import AdminStatCard from '../components/admin/AdminStatCard';
 import UserManagementTable from '../components/admin/UserManagementTable';
 import ReportManagementSection from '../components/admin/ReportManagementSection';
 import ModuleReportsTab from '../components/admin/ModuleReportsTab';
 import AuditLogTable from '../components/admin/AuditLogTable';
 
-const claimsTrendData = [
-  { month: 'Apr', total: 18, approved: 14, rejected: 2, pending: 2 },
-  { month: 'May', total: 26, approved: 22, rejected: 1, pending: 3 },
-  { month: 'Jun', total: 34, approved: 29, rejected: 2, pending: 3 },
-  { month: 'Jul', total: 42, approved: 36, rejected: 2, pending: 4 },
-  { month: 'Aug', total: 51, approved: 44, rejected: 3, pending: 4 },
-  { month: 'Sep', total: 60, approved: 52, rejected: 3, pending: 5 },
-];
-
-const paymentTrendData = [
-  { month: 'Apr', premium: 52000, payout: 28000 },
-  { month: 'May', premium: 61000, payout: 34000 },
-  { month: 'Jun', premium: 70000, payout: 41000 },
-  { month: 'Jul', premium: 82000, payout: 49000 },
-  { month: 'Aug', premium: 93000, payout: 56000 },
-  { month: 'Sep', premium: 104000, payout: 64000 },
-];
-
-const policyDistributionData = [
-  { name: 'Individual Shield', value: 45, color: '#059669' },
-  { name: 'Family Care Plus', value: 32, color: '#2563eb' },
-  { name: 'Senior Support', value: 15, color: '#0284c7' },
-  { name: 'Basic Emergency', value: 8, color: '#94a3b8' },
-];
-
-const hospitalPerformanceData = [
-  { name: 'City General', claims: 84, approvedAmt: 98000, satisfaction: 98 },
-  { name: 'St. Jude Center', claims: 62, approvedAmt: 74000, satisfaction: 96 },
-  { name: 'Sunrise Clinic', claims: 18, approvedAmt: 14000, satisfaction: 84 },
-];
-
 const AdminReporting = () => {
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, users, reports, modules, audit
   const [stats, setStats] = useState(null);
+  const [claims, setClaims] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState(null);
 
@@ -82,37 +57,40 @@ const AdminReporting = () => {
     setLoadingStats(true);
     setStatsError(null);
     try {
-      const res = await adminService.getDashboardStats();
-      if (res && res.data) {
-        setStats(res.data);
+      const [statsRes, claimsRes, paymentsRes, hospitalsRes] = await Promise.all([
+        adminService.getDashboardStats().catch(() => null),
+        claimService.getAllClaims().catch(() => null),
+        paymentService.getAllPayments().catch(() => null),
+        hospitalService.getAllHospitals().catch(() => null),
+      ]);
+
+      if (statsRes && statsRes.data) {
+        setStats(statsRes.data);
+      } else {
+        setStats(null);
+      }
+
+      if (claimsRes && claimsRes.data && Array.isArray(claimsRes.data)) {
+        setClaims(claimsRes.data);
+      } else {
+        setClaims([]);
+      }
+
+      if (paymentsRes && paymentsRes.data && Array.isArray(paymentsRes.data)) {
+        setPayments(paymentsRes.data);
+      } else {
+        setPayments([]);
+      }
+
+      if (hospitalsRes && hospitalsRes.data && Array.isArray(hospitalsRes.data)) {
+        setHospitals(hospitalsRes.data);
+      } else {
+        setHospitals([]);
       }
     } catch (err) {
       console.error('Failed to load dashboard stats:', err);
-      // Fallback seeded values
-      setStats({
-        totalUsers: 5,
-        activeUsers: 4,
-        totalPolicies: 4,
-        activePolicies: 3,
-        totalClaims: 4,
-        pendingClaims: 1,
-        totalClaimAmount: 40950.0,
-        totalApprovedClaimAmount: 12950.0,
-        totalPayments: 4,
-        totalPaymentAmount: 14400.0,
-        networkHospitals: 3,
-        openSupportTickets: 2,
-        claimStatusDistribution: { APPROVED: 2, PENDING: 1, REJECTED: 1 },
-        paymentStatusDistribution: { SUCCESSFUL: 2, COMPLETED: 1, FAILED: 1 },
-        policyStatusDistribution: { ACTIVE: 3, INACTIVE: 1 },
-        supportPriorityDistribution: { HIGH: 1, MEDIUM: 1, LOW: 1 },
-        recentAuditLogs: [
-          { id: 1, username: 'admin', action: 'SYSTEM_INIT', description: 'Database seed completed with default system configuration.', timestamp: '2026-10-05T07:00:00' },
-          { id: 2, username: 'admin', action: 'ADMIN_LOGIN', description: 'Administrator logged into backend management suite.', timestamp: '2026-10-05T07:15:00' },
-          { id: 3, username: 'admin', action: 'REPORT_GENERATED', description: 'Generated Q3 Claim Breakdown Audit report.', timestamp: '2026-10-05T07:30:00' },
-          { id: 4, username: 'admin', action: 'USER_STATUS_CHANGED', description: 'Deactivated user mike_smith due to account review.', timestamp: '2026-10-05T08:00:00' },
-        ]
-      });
+      setStats(null);
+      setStatsError('Unable to connect to backend reporting API.');
     } finally {
       setLoadingStats(false);
     }
@@ -121,6 +99,83 @@ const AdminReporting = () => {
   useEffect(() => {
     fetchDashboardStats();
   }, []);
+
+  const claimsTrendData = React.useMemo(() => {
+    if (!claims.length) {
+      return [{ month: 'Current', total: 0, approved: 0, rejected: 0, pending: 0 }];
+    }
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const grouped = {};
+    claims.forEach((c) => {
+      const d = c.createdAt ? new Date(c.createdAt) : new Date();
+      const mName = isNaN(d.getTime()) ? 'Current' : months[d.getMonth()];
+      if (!grouped[mName]) {
+        grouped[mName] = { month: mName, total: 0, approved: 0, rejected: 0, pending: 0 };
+      }
+      grouped[mName].total += 1;
+      const st = (c.status || '').toUpperCase();
+      if (st === 'APPROVED' || st === 'SETTLED') {
+        grouped[mName].approved += 1;
+      } else if (st === 'REJECTED') {
+        grouped[mName].rejected += 1;
+      } else {
+        grouped[mName].pending += 1;
+      }
+    });
+    return Object.values(grouped);
+  }, [claims]);
+
+  const paymentTrendData = React.useMemo(() => {
+    if (!payments.length) {
+      return [{ month: 'Current', premium: 0, payout: 0 }];
+    }
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const grouped = {};
+    payments.forEach((p) => {
+      const d = p.createdAt ? new Date(p.createdAt) : new Date();
+      const mName = isNaN(d.getTime()) ? 'Current' : months[d.getMonth()];
+      if (!grouped[mName]) {
+        grouped[mName] = { month: mName, premium: 0, payout: 0 };
+      }
+      const amt = Number(p.amount) || 0;
+      if (p.claimId || p.type === 'CLAIM_PAYOUT') {
+        grouped[mName].payout += amt;
+      } else {
+        grouped[mName].premium += amt;
+      }
+    });
+    return Object.values(grouped);
+  }, [payments]);
+
+  const policyDistributionData = React.useMemo(() => {
+    if (!stats || !stats.policyStatusDistribution || Object.keys(stats.policyStatusDistribution).length === 0) {
+      return [];
+    }
+    const colors = ['#059669', '#2563eb', '#0284c7', '#d97706', '#94a3b8'];
+    const total = Object.values(stats.policyStatusDistribution).reduce((sum, v) => sum + Number(v), 0) || 1;
+    return Object.entries(stats.policyStatusDistribution).map(([name, count], i) => ({
+      name,
+      value: Math.round((Number(count) / total) * 100),
+      rawCount: Number(count),
+      color: colors[i % colors.length]
+    }));
+  }, [stats]);
+
+  const hospitalPerformanceData = React.useMemo(() => {
+    if (!hospitals.length) {
+      return [];
+    }
+    return hospitals.map((h) => {
+      const hClaims = claims.filter((c) =>
+        (c.hospitalName && c.hospitalName.toLowerCase().includes(h.name.toLowerCase())) ||
+        c.hospitalId === h.id
+      );
+      return {
+        name: h.name || h.hospitalCode,
+        claims: hClaims.length,
+      };
+    });
+  }, [hospitals, claims]);
 
   const formatCurrency = (amt) => {
     if (!amt) return '$0.00';
@@ -136,7 +191,6 @@ const AdminReporting = () => {
             <span className="text-xs font-bold text-slate-700 uppercase tracking-widest bg-slate-100 px-2.5 py-1 rounded border border-slate-200">
               Admin & System Reporting
             </span>
-            <span className="text-xs text-slate-500">MLBB2G209 | Dhimantha W.L.T.</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5 mt-2">
             <ShieldAlert className="w-7 h-7 text-emerald-600" />
@@ -219,6 +273,21 @@ const AdminReporting = () => {
         </button>
       </div>
 
+      {statsError && (
+        <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <span>{statsError} Live database statistics cannot be retrieved right now.</span>
+          </div>
+          <button
+            onClick={fetchDashboardStats}
+            className="text-xs font-bold underline hover:text-amber-900"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* TAB 1: EXECUTIVE ANALYTICS DASHBOARD */}
       {activeTab === 'dashboard' && (
         <div className="space-y-6">
@@ -247,10 +316,10 @@ const AdminReporting = () => {
                   <TrendingUp className="w-4 h-4 text-blue-600" />
                 </div>
                 <h4 className="text-sm font-bold text-slate-900">
-                  "Claims increased by 12% this month."
+                  {stats ? `${stats.totalClaims || 0} Total Claims Recorded` : '0 Claims Processed'}
                 </h4>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Seasonal inpatient surge verified. Underwriting reserves remain at 3.2x required solvency ratio.
+                  {stats ? `Total claim portfolio volume: ${formatCurrency(stats.totalClaimAmount)}.` : 'Claim metrics will appear once recorded in database.'}
                 </p>
               </div>
 
@@ -260,10 +329,10 @@ const AdminReporting = () => {
                   <AlertTriangle className="w-4 h-4 text-amber-700" />
                 </div>
                 <h4 className="text-sm font-bold text-slate-900">
-                  "High-risk claims are concentrated in Hospital Network A."
+                  {stats ? `${stats.networkHospitals || 0} Network Facilities` : '0 Facilities Empanelled'}
                 </h4>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  2 billing anomaly codes flagged at Sunrise Community clinic. Recommend audit review before reimbursement.
+                  {stats ? `${stats.pendingClaims || 0} claims currently pending audit review in provider network.` : 'Tracking network hospital facilities in live database.'}
                 </p>
               </div>
 
@@ -273,10 +342,10 @@ const AdminReporting = () => {
                   <CheckCircle2 className="w-4 h-4 text-emerald-700" />
                 </div>
                 <h4 className="text-sm font-bold text-slate-900">
-                  "Payment delays decreased by 8%."
+                  {stats ? `${stats.totalPayments || 0} Settled Transactions` : '0 Transactions Settled'}
                 </h4>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Direct deposit integration shortened average bank settlement to 4.2 hours with zero manual intervention.
+                  {stats ? `Total disbursement volume settled is ${formatCurrency(stats.totalPaymentAmount)}.` : 'Payment reconciliation tracking active.'}
                 </p>
               </div>
             </div>
@@ -286,42 +355,42 @@ const AdminReporting = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <AdminStatCard
               title="Total Users"
-              value={stats ? stats.totalUsers : 5}
-              subtext={stats ? `${stats.activeUsers} Active` : '4 Active'}
+              value={stats ? stats.totalUsers : 0}
+              subtext={stats ? `${stats.activeUsers || 0} Active` : '0 Active'}
               icon={Users}
               color="blue"
             />
             <AdminStatCard
               title="Active Policies"
-              value={stats ? stats.activePolicies : 3}
+              value={stats ? stats.activePolicies : 0}
               subtext="Underwritten Plans"
               icon={ShieldCheck}
               color="emerald"
             />
             <AdminStatCard
               title="Total Claims"
-              value={stats ? stats.totalClaims : 4}
+              value={stats ? stats.totalClaims : 0}
               subtext="Total Submissions"
               icon={FileText}
               color="blue"
             />
             <AdminStatCard
               title="Approved Claims"
-              value={stats && stats.claimStatusDistribution ? stats.claimStatusDistribution.APPROVED || 2 : 2}
-              subtext={stats ? formatCurrency(stats.totalApprovedClaimAmount) : '$12,950.00'}
+              value={stats && stats.claimStatusDistribution ? stats.claimStatusDistribution.APPROVED || 0 : 0}
+              subtext={stats ? formatCurrency(stats.totalApprovedClaimAmount) : '$0.00'}
               icon={CheckCircle2}
               color="emerald"
             />
             <AdminStatCard
               title="Pending Claims"
-              value={stats ? stats.pendingClaims : 1}
+              value={stats ? stats.pendingClaims : 0}
               subtext="Under Review"
               icon={Clock}
               color="amber"
             />
             <AdminStatCard
               title="Total Revenue"
-              value={stats ? formatCurrency(stats.totalPaymentAmount) : '$14,400.00'}
+              value={stats ? formatCurrency(stats.totalPaymentAmount) : '$0.00'}
               subtext="Settled Premium"
               icon={CreditCard}
               color="emerald"
@@ -338,7 +407,7 @@ const AdminReporting = () => {
                   <p className="text-xs text-slate-500">Total volume vs automated approval rates</p>
                 </div>
                 <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  +24% Volume
+                  Live DB
                 </span>
               </div>
 
@@ -376,7 +445,7 @@ const AdminReporting = () => {
                   <p className="text-xs text-slate-500">Gross premium revenue vs claims payouts</p>
                 </div>
                 <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  Healthy Margin
+                  Live Cashflow
                 </span>
               </div>
 
@@ -407,32 +476,36 @@ const AdminReporting = () => {
               </div>
 
               <div className="h-64 w-full flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={policyDistributionData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={85}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {policyDistributionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(val) => [`${val}%`, 'Enrollment']}
-                      contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
-                    />
-                    <Legend
-                      verticalAlign="bottom"
-                      height={36}
-                      formatter={(val) => <span className="text-xs text-slate-700 font-medium">{val}</span>}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                {policyDistributionData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={policyDistributionData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={85}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {policyDistributionData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(val) => [`${val}%`, 'Enrollment']}
+                        contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                      />
+                      <Legend
+                        verticalAlign="bottom"
+                        height={36}
+                        formatter={(val) => <span className="text-xs text-slate-700 font-medium">{val}</span>}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-xs text-slate-400">No policy distribution data recorded in database.</div>
+                )}
               </div>
             </div>
 
@@ -445,18 +518,22 @@ const AdminReporting = () => {
                 </div>
               </div>
 
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={hospitalPerformanceData} layout="vertical" margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                    <XAxis type="number" stroke="#94a3b8" tick={{ fontSize: 12 }} />
-                    <YAxis dataKey="name" type="category" stroke="#94a3b8" tick={{ fontSize: 12 }} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
-                    />
-                    <Bar dataKey="claims" fill="#0284c7" radius={[0, 4, 4, 0]} name="Processed Claims" />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="h-64 w-full flex items-center justify-center">
+                {hospitalPerformanceData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={hospitalPerformanceData} layout="vertical" margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                      <XAxis type="number" stroke="#94a3b8" tick={{ fontSize: 12 }} />
+                      <YAxis dataKey="name" type="category" stroke="#94a3b8" tick={{ fontSize: 12 }} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                      />
+                      <Bar dataKey="claims" fill="#0284c7" radius={[0, 4, 4, 0]} name="Processed Claims" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-xs text-slate-400">No hospital network claims volume recorded.</div>
+                )}
               </div>
             </div>
           </div>

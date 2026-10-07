@@ -107,10 +107,41 @@ public class AdminDataSeeder implements CommandLineRunner {
 
             // Seed Payments
             if (paymentRepository.count() == 0) {
-                paymentRepository.save(new Payment("TXN-9001", u1.getId(), 1L, null, new BigDecimal("450.00"), "CREDIT_CARD", "SUCCESSFUL"));
-                paymentRepository.save(new Payment("TXN-9002", u2.getId(), 2L, null, new BigDecimal("850.00"), "BANK_TRANSFER", "SUCCESSFUL"));
-                paymentRepository.save(new Payment("TXN-9003", u1.getId(), null, 1L, new BigDecimal("12500.00"), "DIRECT_DEPOSIT", "COMPLETED"));
-                paymentRepository.save(new Payment("TXN-9004", u3.getId(), 3L, null, new BigDecimal("600.00"), "CREDIT_CARD", "FAILED"));
+                Payment p1 = new Payment();
+                p1.setTransactionId("TXN-9001");
+                p1.setUserId(u1.getId());
+                p1.setPolicyId(1L);
+                p1.setAmount(new BigDecimal("450.00"));
+                p1.setPaymentMethod("CREDIT_CARD");
+                p1.setStatus("SUCCESSFUL");
+                paymentRepository.save(p1);
+
+                Payment p2 = new Payment();
+                p2.setTransactionId("TXN-9002");
+                p2.setUserId(u2.getId());
+                p2.setPolicyId(2L);
+                p2.setAmount(new BigDecimal("850.00"));
+                p2.setPaymentMethod("BANK_TRANSFER");
+                p2.setStatus("SUCCESSFUL");
+                paymentRepository.save(p2);
+
+                Payment p3 = new Payment();
+                p3.setTransactionId("TXN-9003");
+                p3.setUserId(u1.getId());
+                p3.setClaimId(1L);
+                p3.setAmount(new BigDecimal("12500.00"));
+                p3.setPaymentMethod("DIRECT_DEPOSIT");
+                p3.setStatus("COMPLETED");
+                paymentRepository.save(p3);
+
+                Payment p4 = new Payment();
+                p4.setTransactionId("TXN-9004");
+                p4.setUserId(u3.getId());
+                p4.setPolicyId(3L);
+                p4.setAmount(new BigDecimal("600.00"));
+                p4.setPaymentMethod("CREDIT_CARD");
+                p4.setStatus("FAILED");
+                paymentRepository.save(p4);
             }
 
             // Seed Hospitals
@@ -148,9 +179,9 @@ public class AdminDataSeeder implements CommandLineRunner {
 
             // Seed Support Tickets
             if (supportRepository.count() == 0) {
-                supportRepository.save(new SupportTicket("TKT-5001", u1.getId(), "Policy Auto-Renewal Question", "Would like to know if my coverage renews automatically next month.", "OPEN", "MEDIUM"));
-                supportRepository.save(new SupportTicket("TKT-5002", u2.getId(), "Claim Reimbursement Delay", "Submitted claim CLM-8002 three days ago, checking status.", "IN_PROGRESS", "HIGH"));
-                supportRepository.save(new SupportTicket("TKT-5003", u3.getId(), "Empanelled Hospital List Update", "Inquiring if Sunrise Clinic is still under network coverage.", "RESOLVED", "LOW"));
+                supportRepository.save(new SupportTicket("TKT-5001", u1, "Policy Auto-Renewal Question", "Would like to know if my coverage renews automatically next month.", "OPEN", "MEDIUM"));
+                supportRepository.save(new SupportTicket("TKT-5002", u2, "Claim Reimbursement Delay", "Submitted claim CLM-8002 three days ago, checking status.", "IN_PROGRESS", "HIGH"));
+                supportRepository.save(new SupportTicket("TKT-5003", u3, "Empanelled Hospital List Update", "Inquiring if Sunrise Clinic is still under network coverage.", "RESOLVED", "LOW"));
             }
 
             // Seed Reports
