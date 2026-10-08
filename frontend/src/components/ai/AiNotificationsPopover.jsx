@@ -48,7 +48,7 @@ export const AiNotificationsPopover = ({ isOpen, onClose, onSelectNotification }
               notifs.push({
                 id: `claim-pend-${c.id}`,
                 title: 'Claim Review Pending',
-                desc: `Claim #${c.claimNumber || c.id} for $${Number(c.claimAmount || 0).toLocaleString()} awaiting assessment.`,
+                desc: `Claim #${c.claimNumber || c.id} for Rs. ${Number(c.claimAmount || 0).toLocaleString('en-LK')} awaiting assessment.`,
                 type: 'document',
                 severity: 'medium',
                 time: c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent',

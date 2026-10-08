@@ -58,6 +58,9 @@ public class HospitalServiceImpl implements HospitalService {
         hospital.setCity(dto.getCity());
         hospital.setContactNumber(dto.getContactNumber());
         hospital.setEmail(dto.getEmail());
+        if (dto.getStatus() != null && !dto.getStatus().isBlank()) {
+            hospital.setStatus(parseStatus(dto.getStatus()));
+        }
 
         return toDTO(hospitalRepository.save(hospital));
     }
@@ -83,6 +86,12 @@ public class HospitalServiceImpl implements HospitalService {
         Hospital hospital = findOrThrow(id);
         hospital.setStatus(HospitalStatus.INACTIVE);
         return toDTO(hospitalRepository.save(hospital));
+    }
+
+    @Override
+    public void deleteHospital(Long id) {
+        Hospital hospital = findOrThrow(id);
+        hospitalRepository.delete(hospital);
     }
 
     private Hospital findOrThrow(Long id) {

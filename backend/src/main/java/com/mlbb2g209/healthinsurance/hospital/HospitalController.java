@@ -66,6 +66,12 @@ public class HospitalController {
         return ResponseEntity.ok(ApiResponse.success("Hospital deactivated", hospitalService.deactivateHospital(id)));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteHospital(@PathVariable Long id) {
+        hospitalService.deleteHospital(id);
+        return ResponseEntity.ok(ApiResponse.success("Hospital deleted successfully", null));
+    }
+
     @GetMapping("/eligibility/{policyId}")
     public ResponseEntity<ApiResponse<EligibilityCheck>> checkEligibility(@PathVariable Long policyId) {
         return ResponseEntity.ok(ApiResponse.success("Eligibility check complete", eligibilityService.checkEligibility(policyId)));

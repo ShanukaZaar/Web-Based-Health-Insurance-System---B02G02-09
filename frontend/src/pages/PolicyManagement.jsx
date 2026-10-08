@@ -18,7 +18,8 @@ import {
   Clock,
   TrendingUp,
   FileText,
-  Trash2
+  Trash2,
+  Edit2
 } from 'lucide-react';
 import policyService from '../services/policyService';
 import { useToast } from '../context/ToastContext';
@@ -30,6 +31,8 @@ const PolicyManagement = () => {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editPolicy, setEditPolicy] = useState(null);
 
   // New Policy Form
   const [newPolicy, setNewPolicy] = useState({
@@ -99,6 +102,58 @@ const PolicyManagement = () => {
     }
   };
 
+  const handleOpenEditModal = (policy) => {
+    setEditPolicy({
+      id: policy.id,
+      policyNumber: policy.policyNumber,
+      title: policy.title || '',
+      description: policy.description || '',
+      coverageAmount: policy.coverageAmount !== undefined ? String(policy.coverageAmount) : '',
+      premiumAmount: policy.premiumAmount !== undefined ? String(policy.premiumAmount) : '',
+      policyType: policy.policyType || 'INDIVIDUAL',
+      status: policy.status || 'ACTIVE'
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdatePolicy = async (e) => {
+    e.preventDefault();
+    if (!editPolicy || !editPolicy.title || !editPolicy.coverageAmount || !editPolicy.premiumAmount) {
+      showToast('Please specify valid policy title, coverage limit, and premium amount.', 'error', 'Invalid Input');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        title: editPolicy.title.trim(),
+        description: editPolicy.description ? editPolicy.description.trim() : '',
+        coverageAmount: Number(editPolicy.coverageAmount),
+        premiumAmount: Number(editPolicy.premiumAmount),
+        policyType: editPolicy.policyType,
+        status: editPolicy.status
+      };
+
+      await policyService.updatePolicy(editPolicy.id, payload);
+      setShowEditModal(false);
+      setEditPolicy(null);
+      fetchPolicies();
+      showToast(
+        `Policy "${payload.title}" (${editPolicy.policyNumber || '#' + editPolicy.id}) updated successfully.`,
+        'success',
+        'Policy Updated'
+      );
+    } catch (err) {
+      showToast(
+        'Failed to update policy: ' + (err.response?.data?.message || err.message),
+        'error',
+        'Policy Update Error'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleDeletePolicy = async (policy) => {
     if (!window.confirm(`Are you sure you want to cancel and deactivate policy "${policy.title}" (${policy.policyNumber || '#' + policy.id})?`)) {
       return;
@@ -138,7 +193,10 @@ const PolicyManagement = () => {
   });
 
   const formatCurrency = (amt) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(amt) || 0);
+    return `Rs. ${(Number(amt) || 0).toLocaleString('en-LK', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   return (
@@ -207,7 +265,7 @@ const PolicyManagement = () => {
             <span className="text-[11px] uppercase font-bold text-slate-500 block mb-1">Coverage Utilization</span>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold text-slate-900">2.6%</span>
-              <span className="text-xs text-slate-500">of $1.9M cap</span>
+              <span className="text-xs text-slate-500">of Rs. 1.9M cap</span>
             </div>
             <div className="w-full bg-slate-200 rounded-full h-1.5 mt-2 overflow-hidden">
               <div className="bg-emerald-600 h-full rounded-full" style={{ width: '2.6%' }} />
@@ -217,7 +275,7 @@ const PolicyManagement = () => {
           <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200">
             <span className="text-[11px] uppercase font-bold text-slate-500 block mb-1">Remaining Coverage</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-emerald-700">$1,859,050</span>
+              <span className="text-2xl font-bold text-emerald-700">Rs. 1,859,050</span>
             </div>
             <span className="text-[11px] text-slate-500 mt-1 block">97.4% Liquidity Buffer</span>
           </div>
@@ -332,6 +390,13 @@ const PolicyManagement = () => {
                     {pol.status || 'ACTIVE'}
                   </span>
                   <button
+                    onClick={() => handleOpenEditModal(pol)}
+                    className="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition-colors"
+                    title="Edit policy plan details"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
                     onClick={() => handleDeletePolicy(pol)}
                     className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
                     title="Cancel and deactivate policy"
@@ -421,7 +486,7 @@ const PolicyManagement = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-700 font-medium block mb-1">Coverage Limit ($) *</label>
+                  <label className="text-slate-700 font-medium block mb-1">Coverage Limit (Rs.) *</label>
                   <input
                     type="number"
                     required
@@ -432,7 +497,7 @@ const PolicyManagement = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-slate-700 font-medium block mb-1">Monthly Premium ($) *</label>
+                  <label className="text-slate-700 font-medium block mb-1">Monthly Premium (Rs.) *</label>
                   <input
                     type="number"
                     required
@@ -497,6 +562,144 @@ const PolicyManagement = () => {
                 >
                   {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   Create Policy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT / UPDATE POLICY MODAL */}
+      {showEditModal && editPolicy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-lg max-h-[92vh] rounded-2xl border border-slate-200 shadow-2xl flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
+            {/* Pinned Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 flex-shrink-0 bg-white">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Edit2 className="w-5 h-5 text-emerald-600" />
+                  Update Policy Plan
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Modify terms, coverage limit, premium, category, and status.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowEditModal(false); setEditPolicy(null); }}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleUpdatePolicy} className="flex flex-col flex-1 overflow-hidden min-h-0">
+              <div className="overflow-y-auto px-6 py-4 space-y-4 text-xs sm:text-sm flex-1">
+                {/* Policy Code Identifier (Read-only badge) */}
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-600">Policy Reference Code</span>
+                  <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded border border-emerald-300">
+                    {editPolicy.policyNumber || `POL-ID-${editPolicy.id}`}
+                  </span>
+                </div>
+
+                <div>
+                  <label className="text-slate-700 font-medium block mb-1">Policy Title *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editPolicy.title}
+                    onChange={(e) => setEditPolicy({ ...editPolicy, title: e.target.value })}
+                    placeholder="e.g. Platinum Executive Health Shield"
+                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-slate-700 font-medium block mb-1">Coverage Limit (Rs.) *</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      step="0.01"
+                      value={editPolicy.coverageAmount}
+                      onChange={(e) => setEditPolicy({ ...editPolicy, coverageAmount: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-slate-700 font-medium block mb-1">Monthly Premium (Rs.) *</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      step="0.01"
+                      value={editPolicy.premiumAmount}
+                      onChange={(e) => setEditPolicy({ ...editPolicy, premiumAmount: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-slate-700 font-medium block mb-1">Category</label>
+                    <select
+                      value={editPolicy.policyType}
+                      onChange={(e) => setEditPolicy({ ...editPolicy, policyType: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
+                    >
+                      <option value="INDIVIDUAL">INDIVIDUAL</option>
+                      <option value="FAMILY">FAMILY</option>
+                      <option value="SENIOR">SENIOR</option>
+                      <option value="BASIC">BASIC</option>
+                      <option value="HEALTH">HEALTH</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-slate-700 font-medium block mb-1">Operational Status</label>
+                    <select
+                      value={editPolicy.status}
+                      onChange={(e) => setEditPolicy({ ...editPolicy, status: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
+                    >
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="INACTIVE">INACTIVE</option>
+                      <option value="CANCELLED">CANCELLED</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-slate-700 font-medium block mb-1">Coverage Scope Description</label>
+                  <textarea
+                    rows={3}
+                    value={editPolicy.description}
+                    onChange={(e) => setEditPolicy({ ...editPolicy, description: e.target.value })}
+                    placeholder="Outline coverage terms, hospital network inclusions, and deductibles..."
+                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Pinned Action Buttons Footer */}
+              <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end gap-3 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditModal(false); setEditPolicy(null); }}
+                  className="bg-white hover:bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-xs font-semibold border border-slate-200 transition-colors shadow-2xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-5 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-2 shadow-xs transition-colors"
+                >
+                  {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  Save Policy Changes
                 </button>
               </div>
             </form>

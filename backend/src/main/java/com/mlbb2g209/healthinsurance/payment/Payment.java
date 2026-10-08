@@ -37,6 +37,30 @@ public class Payment extends BaseEntity {
     @Column(name = "payment_method", nullable = false, length = 50)
     private String paymentMethod;
 
+    @Column(name = "payment_type", length = 50)
+    private String paymentType = "PREMIUM_PAYMENT";
+
+    @Column(name = "billing_period", length = 50)
+    private String billingPeriod;
+
+    @Column(name = "payer_name", length = 100)
+    private String payerName;
+
+    @Column(name = "payer_email", length = 100)
+    private String payerEmail;
+
+    @Column(name = "payer_phone", length = 30)
+    private String payerPhone;
+
+    @Column(name = "card_last_four", length = 10)
+    private String cardLastFour;
+
+    @Column(name = "bank_name", length = 100)
+    private String bankName;
+
+    @Column(name = "reference_number", length = 100)
+    private String referenceNumber;
+
     @Column(name = "status", nullable = false, length = 30)
     private String status;
 
@@ -126,6 +150,70 @@ public class Payment extends BaseEntity {
 
     public void setPaymentMethod(String paymentMethod) {
         this.paymentMethod = paymentMethod;
+    }
+
+    public String getPaymentType() {
+        return paymentType;
+    }
+
+    public void setPaymentType(String paymentType) {
+        this.paymentType = paymentType;
+    }
+
+    public String getBillingPeriod() {
+        return billingPeriod;
+    }
+
+    public void setBillingPeriod(String billingPeriod) {
+        this.billingPeriod = billingPeriod;
+    }
+
+    public String getPayerName() {
+        return payerName;
+    }
+
+    public void setPayerName(String payerName) {
+        this.payerName = payerName;
+    }
+
+    public String getPayerEmail() {
+        return payerEmail;
+    }
+
+    public void setPayerEmail(String payerEmail) {
+        this.payerEmail = payerEmail;
+    }
+
+    public String getPayerPhone() {
+        return payerPhone;
+    }
+
+    public void setPayerPhone(String payerPhone) {
+        this.payerPhone = payerPhone;
+    }
+
+    public String getCardLastFour() {
+        return cardLastFour;
+    }
+
+    public void setCardLastFour(String cardLastFour) {
+        this.cardLastFour = cardLastFour;
+    }
+
+    public String getBankName() {
+        return bankName;
+    }
+
+    public void setBankName(String bankName) {
+        this.bankName = bankName;
+    }
+
+    public String getReferenceNumber() {
+        return referenceNumber;
+    }
+
+    public void setReferenceNumber(String referenceNumber) {
+        this.referenceNumber = referenceNumber;
     }
 
     public String getStatus() {

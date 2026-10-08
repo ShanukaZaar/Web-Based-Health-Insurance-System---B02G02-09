@@ -178,8 +178,11 @@ const AdminReporting = () => {
   }, [hospitals, claims]);
 
   const formatCurrency = (amt) => {
-    if (!amt) return '$0.00';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amt);
+    if (!amt) return 'Rs. 0.00';
+    return `Rs. ${(Number(amt) || 0).toLocaleString('en-LK', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   return (
@@ -377,7 +380,7 @@ const AdminReporting = () => {
             <AdminStatCard
               title="Approved Claims"
               value={stats && stats.claimStatusDistribution ? stats.claimStatusDistribution.APPROVED || 0 : 0}
-              subtext={stats ? formatCurrency(stats.totalApprovedClaimAmount) : '$0.00'}
+              subtext={stats ? formatCurrency(stats.totalApprovedClaimAmount) : 'Rs. 0.00'}
               icon={CheckCircle2}
               color="emerald"
             />
@@ -390,7 +393,7 @@ const AdminReporting = () => {
             />
             <AdminStatCard
               title="Total Revenue"
-              value={stats ? formatCurrency(stats.totalPaymentAmount) : '$0.00'}
+              value={stats ? formatCurrency(stats.totalPaymentAmount) : 'Rs. 0.00'}
               subtext="Settled Premium"
               icon={CreditCard}
               color="emerald"
@@ -441,7 +444,7 @@ const AdminReporting = () => {
             <div className="bg-white p-5 sm:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Financial Cashflow Trend ($)</h3>
+                  <h3 className="text-base font-bold text-slate-900">Financial Cashflow Trend (Rs.)</h3>
                   <p className="text-xs text-slate-500">Gross premium revenue vs claims payouts</p>
                 </div>
                 <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -454,9 +457,9 @@ const AdminReporting = () => {
                   <BarChart data={paymentTrendData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                     <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 12 }} />
-                    <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v / 1000}k`} />
+                    <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} tickFormatter={(v) => `Rs. ${v / 1000}k`} />
                     <Tooltip
-                      formatter={(val) => [`$${Number(val).toLocaleString()}`, '']}
+                      formatter={(val) => [`Rs. ${Number(val).toLocaleString()}`, '']}
                       contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                     />
                     <Bar dataKey="premium" fill="#059669" radius={[4, 4, 0, 0]} name="Premium Collected" />

@@ -8,6 +8,7 @@ export const hospitalService = {
   suspendHospital: (id) => api.put(`/hospitals/${id}/suspend`),
   reactivateHospital: (id) => api.put(`/hospitals/${id}/reactivate`),
   deactivateHospital: (id) => api.put(`/hospitals/${id}/deactivate`),
+  deleteHospital: (id) => api.delete(`/hospitals/${id}`),
 };
 
 export default hospitalService;

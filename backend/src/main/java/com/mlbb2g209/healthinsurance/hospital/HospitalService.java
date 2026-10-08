@@ -12,4 +12,5 @@ public interface HospitalService {
     HospitalDTO suspendHospital(Long id);
     HospitalDTO reactivateHospital(Long id);
     HospitalDTO deactivateHospital(Long id);
+    void deleteHospital(Long id);
 }

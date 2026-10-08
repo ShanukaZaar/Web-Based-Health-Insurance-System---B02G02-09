@@ -163,7 +163,10 @@ const DashboardOverview = () => {
   };
 
   const formatCurrency = (amt) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amt || 0);
+    return `Rs. ${(Number(amt) || 0).toLocaleString('en-LK', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   return (
@@ -248,7 +251,7 @@ const DashboardOverview = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-2">
-            {stats ? `Volume: ${formatCurrency(stats.totalClaimAmount)}` : (loading ? 'Loading...' : 'Volume: $0.00')}
+            {stats ? `Volume: ${formatCurrency(stats.totalClaimAmount)}` : (loading ? 'Loading...' : 'Volume: Rs. 0.00')}
           </p>
         </div>
 
@@ -283,7 +286,7 @@ const DashboardOverview = () => {
           </div>
           <div className="mt-3 flex items-baseline justify-between">
             <span className="text-2xl sm:text-3xl font-bold text-emerald-700">
-              {stats ? formatCurrency(stats.totalPaymentAmount) : (loading ? 'Loading...' : '$0.00')}
+              {stats ? formatCurrency(stats.totalPaymentAmount) : (loading ? 'Loading...' : 'Rs. 0.00')}
             </span>
             <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               <ArrowUpRight className="w-3.5 h-3.5" /> Disbursed
@@ -430,7 +433,7 @@ const DashboardOverview = () => {
           <div className="flex items-center justify-between">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Payment Analytics</span>
-              <h3 className="text-base font-bold text-slate-900 mt-0.5">Premium Volume vs Claim Payouts ($)</h3>
+              <h3 className="text-base font-bold text-slate-900 mt-0.5">Premium Volume vs Claim Payouts (Rs.)</h3>
             </div>
             <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               Net Surplus: +18.2%
@@ -442,9 +445,9 @@ const DashboardOverview = () => {
               <BarChart data={paymentAnalyticsData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 12 }} />
-                <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v / 1000}k`} />
+                <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} tickFormatter={(v) => `Rs. ${v / 1000}k`} />
                 <Tooltip
-                  formatter={(val) => [`$${Number(val).toLocaleString()}`, '']}
+                  formatter={(val) => [`Rs. ${Number(val).toLocaleString()}`, '']}
                   contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                 />
                 <Bar dataKey="volume" fill="#059669" radius={[4, 4, 0, 0]} name="Premium Collected" />
@@ -512,7 +515,7 @@ const DashboardOverview = () => {
                       {claim.hospital}
                     </td>
                     <td className="py-3 px-3.5 font-bold text-slate-900">
-                      ${Number(claim.claimAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      Rs. {Number(claim.claimAmount).toLocaleString('en-LK', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-3 px-3.5">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${

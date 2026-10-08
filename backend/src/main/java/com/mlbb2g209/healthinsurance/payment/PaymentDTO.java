@@ -17,6 +17,16 @@ public class PaymentDTO {
     private Long claimId;
     private BigDecimal amount;
     private String paymentMethod;
+    private String paymentType;
+    private String billingPeriod;
+    private String payerName;
+    private String payerEmail;
+    private String payerPhone;
+    private String cardLastFour;
+    private String bankName;
+    private String referenceNumber;
+    private String policyTitle;
+    private String userName;
     private String status;
     private LocalDateTime paymentDate;
     private String description;
@@ -113,6 +123,86 @@ public class PaymentDTO {
         this.paymentMethod = paymentMethod;
     }
 
+    public String getPaymentType() {
+        return paymentType;
+    }
+
+    public void setPaymentType(String paymentType) {
+        this.paymentType = paymentType;
+    }
+
+    public String getBillingPeriod() {
+        return billingPeriod;
+    }
+
+    public void setBillingPeriod(String billingPeriod) {
+        this.billingPeriod = billingPeriod;
+    }
+
+    public String getPayerName() {
+        return payerName;
+    }
+
+    public void setPayerName(String payerName) {
+        this.payerName = payerName;
+    }
+
+    public String getPayerEmail() {
+        return payerEmail;
+    }
+
+    public void setPayerEmail(String payerEmail) {
+        this.payerEmail = payerEmail;
+    }
+
+    public String getPayerPhone() {
+        return payerPhone;
+    }
+
+    public void setPayerPhone(String payerPhone) {
+        this.payerPhone = payerPhone;
+    }
+
+    public String getCardLastFour() {
+        return cardLastFour;
+    }
+
+    public void setCardLastFour(String cardLastFour) {
+        this.cardLastFour = cardLastFour;
+    }
+
+    public String getBankName() {
+        return bankName;
+    }
+
+    public void setBankName(String bankName) {
+        this.bankName = bankName;
+    }
+
+    public String getReferenceNumber() {
+        return referenceNumber;
+    }
+
+    public void setReferenceNumber(String referenceNumber) {
+        this.referenceNumber = referenceNumber;
+    }
+
+    public String getPolicyTitle() {
+        return policyTitle;
+    }
+
+    public void setPolicyTitle(String policyTitle) {
+        this.policyTitle = policyTitle;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
     public String getStatus() {
         return status;
     }
@@ -167,24 +257,5 @@ public class PaymentDTO {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    public static class RefundRequest {
-        private String refundReason;
-
-        public RefundRequest() {
-        }
-
-        public RefundRequest(String refundReason) {
-            this.refundReason = refundReason;
-        }
-
-        public String getRefundReason() {
-            return refundReason;
-        }
-
-        public void setRefundReason(String refundReason) {
-            this.refundReason = refundReason;
-        }
     }
 }

@@ -1,10 +1,13 @@
 package com.mlbb2g209.healthinsurance.payment;
 
+import com.mlbb2g209.healthinsurance.admin.UserRepository;
+import com.mlbb2g209.healthinsurance.policy.PolicyRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -19,9 +22,15 @@ import java.util.stream.Collectors;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final UserRepository userRepository;
+    private final PolicyRepository policyRepository;
 
-    public PaymentServiceImpl(PaymentRepository paymentRepository) {
+    public PaymentServiceImpl(PaymentRepository paymentRepository,
+                              UserRepository userRepository,
+                              PolicyRepository policyRepository) {
         this.paymentRepository = paymentRepository;
+        this.userRepository = userRepository;
+        this.policyRepository = policyRepository;
     }
 
     @Override
@@ -45,7 +54,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional(readOnly = true)
     public PaymentDTO getPaymentByTransactionId(String transactionId) {
         Payment payment = paymentRepository.findByTransactionId(transactionId)
-                .orElseThrow(() -> new IllegalArgumentException("Payment record not found with Transaction ID: " + transactionId));
+                .orElseThrow(() -> new IllegalArgumentException("Payment record not found with transaction ID: " + transactionId));
         return mapToDTO(payment);
     }
 
@@ -113,6 +122,29 @@ public class PaymentServiceImpl implements PaymentService {
             dto.setPaymentMethod("CREDIT_CARD");
         }
 
+        if (dto.getPaymentType() == null || dto.getPaymentType().trim().isEmpty()) {
+            dto.setPaymentType("PREMIUM_PAYMENT");
+        }
+
+        if (dto.getBillingPeriod() == null || dto.getBillingPeriod().trim().isEmpty()) {
+            dto.setBillingPeriod(LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMMM yyyy")));
+        }
+
+        // Enrich payer info from UserRepository if not explicitly provided
+        userRepository.findById(dto.getUserId()).ifPresent(user -> {
+            if (dto.getPayerName() == null || dto.getPayerName().trim().isEmpty()) {
+                String fullName = (user.getFirstName() != null ? user.getFirstName() : "") + " " +
+                        (user.getLastName() != null ? user.getLastName() : "");
+                dto.setPayerName(fullName.trim());
+            }
+            if (dto.getPayerEmail() == null || dto.getPayerEmail().trim().isEmpty()) {
+                dto.setPayerEmail(user.getEmail());
+            }
+            if (dto.getPayerPhone() == null || dto.getPayerPhone().trim().isEmpty()) {
+                dto.setPayerPhone(user.getPhoneNumber());
+            }
+        });
+
         if (dto.getPaymentDate() == null) {
             dto.setPaymentDate(LocalDateTime.now());
         }
@@ -133,8 +165,8 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         // Business Logic Safety: Only COMPLETED payments can be refunded
-        if (!"COMPLETED".equalsIgnoreCase(payment.getStatus())) {
-            throw new IllegalStateException("Cannot refund a payment with status: " + payment.getStatus() + ". Only COMPLETED transactions are eligible for refund.");
+        if (!"COMPLETED".equalsIgnoreCase(payment.getStatus()) && !"SUCCESSFUL".equalsIgnoreCase(payment.getStatus())) {
+            throw new IllegalStateException("Cannot refund a payment with status: " + payment.getStatus() + ". Only COMPLETED/SUCCESSFUL transactions are eligible for refund.");
         }
 
         // Mandatory reason check
@@ -196,23 +228,55 @@ public class PaymentServiceImpl implements PaymentService {
             return null;
         }
 
-        return new PaymentDTO(
-                entity.getId(),
-                entity.getTransactionId(),
-                entity.getReceiptNumber(),
-                entity.getUserId(),
-                entity.getPolicyId(),
-                entity.getClaimId(),
-                entity.getAmount(),
-                entity.getPaymentMethod(),
-                entity.getStatus(),
-                entity.getPaymentDate(),
-                entity.getDescription(),
-                entity.getRefundReason(),
-                entity.getRefundDate(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+        PaymentDTO dto = new PaymentDTO();
+        dto.setId(entity.getId());
+        dto.setTransactionId(entity.getTransactionId());
+        dto.setReceiptNumber(entity.getReceiptNumber());
+        dto.setUserId(entity.getUserId());
+        dto.setPolicyId(entity.getPolicyId());
+        dto.setClaimId(entity.getClaimId());
+        dto.setAmount(entity.getAmount());
+        dto.setPaymentMethod(entity.getPaymentMethod());
+        dto.setPaymentType(entity.getPaymentType());
+        dto.setBillingPeriod(entity.getBillingPeriod());
+        dto.setPayerName(entity.getPayerName());
+        dto.setPayerEmail(entity.getPayerEmail());
+        dto.setPayerPhone(entity.getPayerPhone());
+        dto.setCardLastFour(entity.getCardLastFour());
+        dto.setBankName(entity.getBankName());
+        dto.setReferenceNumber(entity.getReferenceNumber());
+        dto.setStatus(entity.getStatus());
+        dto.setPaymentDate(entity.getPaymentDate());
+        dto.setDescription(entity.getDescription());
+        dto.setRefundReason(entity.getRefundReason());
+        dto.setRefundDate(entity.getRefundDate());
+        dto.setCreatedAt(entity.getCreatedAt());
+        dto.setUpdatedAt(entity.getUpdatedAt());
+
+        if (entity.getUserId() != null && userRepository != null) {
+            userRepository.findById(entity.getUserId()).ifPresent(u -> {
+                String fullName = (u.getFirstName() != null ? u.getFirstName() : "") + " " +
+                        (u.getLastName() != null ? u.getLastName() : "");
+                dto.setUserName(fullName.trim());
+                if (dto.getPayerName() == null || dto.getPayerName().trim().isEmpty()) {
+                    dto.setPayerName(fullName.trim());
+                }
+                if (dto.getPayerEmail() == null) {
+                    dto.setPayerEmail(u.getEmail());
+                }
+                if (dto.getPayerPhone() == null) {
+                    dto.setPayerPhone(u.getPhoneNumber());
+                }
+            });
+        }
+
+        if (entity.getPolicyId() != null && policyRepository != null) {
+            policyRepository.findById(entity.getPolicyId()).ifPresent(p -> {
+                dto.setPolicyTitle(p.getTitle() + " (" + p.getPolicyNumber() + ")");
+            });
+        }
+
+        return dto;
     }
 
     private Payment mapToEntity(PaymentDTO dto) {
@@ -220,21 +284,28 @@ public class PaymentServiceImpl implements PaymentService {
             return null;
         }
 
-        Payment payment = new Payment(
-                dto.getTransactionId(),
-                dto.getReceiptNumber(),
-                dto.getUserId(),
-                dto.getPolicyId(),
-                dto.getClaimId(),
-                dto.getAmount(),
-                dto.getPaymentMethod(),
-                dto.getStatus(),
-                dto.getPaymentDate(),
-                dto.getDescription(),
-                dto.getRefundReason(),
-                dto.getRefundDate()
-        );
+        Payment payment = new Payment();
         payment.setId(dto.getId());
+        payment.setTransactionId(dto.getTransactionId());
+        payment.setReceiptNumber(dto.getReceiptNumber());
+        payment.setUserId(dto.getUserId());
+        payment.setPolicyId(dto.getPolicyId());
+        payment.setClaimId(dto.getClaimId());
+        payment.setAmount(dto.getAmount());
+        payment.setPaymentMethod(dto.getPaymentMethod());
+        payment.setPaymentType(dto.getPaymentType() != null ? dto.getPaymentType() : "PREMIUM_PAYMENT");
+        payment.setBillingPeriod(dto.getBillingPeriod());
+        payment.setPayerName(dto.getPayerName());
+        payment.setPayerEmail(dto.getPayerEmail());
+        payment.setPayerPhone(dto.getPayerPhone());
+        payment.setCardLastFour(dto.getCardLastFour());
+        payment.setBankName(dto.getBankName());
+        payment.setReferenceNumber(dto.getReferenceNumber());
+        payment.setStatus(dto.getStatus());
+        payment.setPaymentDate(dto.getPaymentDate());
+        payment.setDescription(dto.getDescription());
+        payment.setRefundReason(dto.getRefundReason());
+        payment.setRefundDate(dto.getRefundDate());
         return payment;
     }
 }

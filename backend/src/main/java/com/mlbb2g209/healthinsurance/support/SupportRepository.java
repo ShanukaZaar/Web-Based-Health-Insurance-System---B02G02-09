@@ -13,6 +13,9 @@ public interface SupportRepository extends JpaRepository<SupportTicket, Long> {
 
     List<SupportTicket> findByUser_Id(Long userId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT s FROM SupportTicket s WHERE s.user.id = :userId")
+    List<SupportTicket> findByUserId(@org.springframework.data.repository.query.Param("userId") Long userId);
+
     List<SupportTicket> findByStatus(String status);
 
     List<SupportTicket> findByPriority(String priority);

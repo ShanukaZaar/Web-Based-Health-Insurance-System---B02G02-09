@@ -78,7 +78,10 @@ const ClaimManagement = () => {
   }, []);
 
   const formatCurrency = (amt) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(amt) || 0);
+    return `Rs. ${(Number(amt) || 0).toLocaleString('en-LK', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   const handleFileClaim = async (e) => {
@@ -363,7 +366,7 @@ const ClaimManagement = () => {
 
                     {/* Claim Amount */}
                     <td className="py-3 px-4 font-bold text-slate-900">
-                      ${Number(claim.claimAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      Rs. {Number(claim.claimAmount).toLocaleString('en-LK', { minimumFractionDigits: 2 })}
                     </td>
 
                     {/* Date */}
@@ -485,7 +488,7 @@ const ClaimManagement = () => {
               <div>
                 <span className="text-slate-500 uppercase tracking-wider block font-semibold">Claim Amount</span>
                 <span className="text-emerald-700 font-bold text-sm">
-                  ${Number(selectedClaimDetails.claimAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  Rs. {Number(selectedClaimDetails.claimAmount).toLocaleString('en-LK', { minimumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
@@ -557,7 +560,7 @@ const ClaimManagement = () => {
 
             <form onSubmit={handleFileClaim} className="space-y-4 text-xs sm:text-sm">
               <div>
-                <label className="text-slate-700 font-medium block mb-1">Claim Amount ($) *</label>
+                <label className="text-slate-700 font-medium block mb-1">Claim Amount (Rs.) *</label>
                 <input
                   type="number"
                   step="0.01"

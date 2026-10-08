@@ -3,6 +3,7 @@ package com.mlbb2g209.healthinsurance.support;
 import com.mlbb2g209.healthinsurance.admin.User;
 import com.mlbb2g209.healthinsurance.admin.UserRepository;
 
+import com.mlbb2g209.healthinsurance.support.strategy.TicketPriorityContext;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class SupportServiceImpl implements SupportService {
 
     private final SupportRepository supportRepository;
     private final UserRepository userRepository;
+    private final TicketPriorityContext priorityContext;
 
     
     private static final DateTimeFormatter DATE_FORMATTER =
@@ -65,11 +67,8 @@ public class SupportServiceImpl implements SupportService {
                         : "OPEN"
         );
 
-        ticket.setPriority(
-                supportDTO.getPriority() != null
-                        ? supportDTO.getPriority()
-                        : "MEDIUM"
-        );
+        // Determine ticket priority dynamically using Strategy Pattern (GoF)
+        ticket.setPriority(priorityContext.resolvePriority(supportDTO));
 
         SupportTicket savedTicket = supportRepository.save(ticket);
 

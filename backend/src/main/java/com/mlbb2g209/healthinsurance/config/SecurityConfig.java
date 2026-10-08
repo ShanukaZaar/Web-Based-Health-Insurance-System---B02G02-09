@@ -52,6 +52,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/h2-console/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                 .requestMatchers("/api/admin/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/payments/*/refund").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
                 .requestMatchers("/api/**").permitAll()
                 .anyRequest().permitAll()
             )

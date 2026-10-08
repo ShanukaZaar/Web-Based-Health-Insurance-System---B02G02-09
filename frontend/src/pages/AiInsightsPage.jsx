@@ -184,7 +184,7 @@ const AiInsightsPage = () => {
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block">Audited Portfolio Volume</span>
           <div className="text-3xl font-extrabold text-emerald-700 mt-2">
-            ${totalVolume.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            Rs. {totalVolume.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <span className="text-xs text-emerald-700 mt-1 block">Total claims sum</span>
         </div>
@@ -274,7 +274,7 @@ const AiInsightsPage = () => {
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
             <span className="font-bold text-emerald-800 block text-sm">Automated Micro-Approvals</span>
             <p className="text-slate-600 leading-relaxed">
-              Claims under $1,000 from verified Tier-1 network hospitals with verified itemized receipts auto-approve within 3 seconds.
+              Claims under Rs. 100,000 from verified Tier-1 network hospitals with verified itemized receipts auto-approve within 3 seconds.
             </p>
           </div>
 

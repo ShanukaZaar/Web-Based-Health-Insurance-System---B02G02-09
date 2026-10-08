@@ -72,7 +72,7 @@ export const AiInsuranceAssistantModal = ({ isOpen, onClose, initialAction = nul
         queryText = `Analyze Claim #${latestClaim.claimNumber || latestClaim.id}`;
         responseText = `Claim Diagnostic for #${latestClaim.claimNumber || latestClaim.id}:
 • Claim ID: ${latestClaim.id} (Policy #${latestClaim.policyId || 'N/A'})
-• Claim Amount: $${Number(latestClaim.claimAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+• Claim Amount: Rs. ${Number(latestClaim.claimAmount || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}
 • Status: ${latestClaim.status || 'PENDING'}
 • Description: ${latestClaim.description || 'Medical service'}
 • Risk Level: ${latestClaim.status === 'REJECTED' ? 'HIGH RISK' : 'LOW RISK'}
@@ -87,8 +87,8 @@ export const AiInsuranceAssistantModal = ({ isOpen, onClose, initialAction = nul
         responseText = `Policy Portfolio Insight for ${latestPolicy.title || 'Policy'}:
 • Policy Number: ${latestPolicy.policyNumber || 'POL-' + latestPolicy.id}
 • Policy Type: ${latestPolicy.policyType || 'COMPREHENSIVE'}
-• Coverage Cap: $${Number(latestPolicy.coverageAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-• Annual Premium: $${Number(latestPolicy.premiumAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+• Coverage Cap: Rs. ${Number(latestPolicy.coverageAmount || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}
+• Annual Premium: Rs. ${Number(latestPolicy.premiumAmount || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}
 • Status: ${latestPolicy.status || 'ACTIVE'}
 • Terms: Plan is active in database and ready for subscriber claims.`;
       } else {
@@ -109,7 +109,7 @@ export const AiInsuranceAssistantModal = ({ isOpen, onClose, initialAction = nul
 • Total Claims Processed: ${stats ? stats.totalClaims : dbData.claims.length}
 • Pending Review Queue: ${stats ? stats.pendingClaims : 0}
 • Empanelled Network Hospitals: ${stats ? stats.networkHospitals : 0}
-• Total Claim Volume: $${stats ? Number(stats.totalClaimAmount || 0).toLocaleString() : '0.00'}
+• Total Claim Volume: Rs. ${stats ? Number(stats.totalClaimAmount || 0).toLocaleString('en-LK') : '0.00'}
 • Verdict: Anomaly scoring active. Standard micro-approvals eligible for verified in-network claims.`;
     }
 

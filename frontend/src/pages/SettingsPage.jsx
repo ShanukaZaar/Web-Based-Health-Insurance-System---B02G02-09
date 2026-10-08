@@ -88,7 +88,7 @@ const SettingsPage = () => {
 
             <div>
               <label className="text-slate-800 font-semibold block mb-1">
-                Auto-Approval Max Threshold ($)
+                Auto-Approval Max Threshold (Rs.)
               </label>
               <input
                 type="number"
@@ -97,7 +97,7 @@ const SettingsPage = () => {
                 className="w-full max-w-xs bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
               />
               <span className="text-[11px] text-slate-500 mt-1 block">
-                Claims below this dollar limit with 100% clean OCR match qualify for automatic settlement.
+                Claims below this rupee threshold with 100% clean OCR match qualify for automatic settlement.
               </span>
             </div>
           </div>

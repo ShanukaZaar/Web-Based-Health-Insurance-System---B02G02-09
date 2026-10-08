@@ -93,7 +93,7 @@ export const AiClaimAnalysisModal = ({ isOpen, onClose, claim, onActionComplete 
                 <div>
                   <span className="text-[11px] uppercase font-semibold text-slate-500 block">Claimed Amount</span>
                   <span className="text-sm font-bold text-emerald-700">
-                    ${Number(claim.claimAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    Rs. {Number(claim.claimAmount || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div>
