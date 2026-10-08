@@ -1,6 +1,5 @@
-# Spring Boot Application Configuration
 server:
-  port: ${SERVER_PORT}
+  port: ${PORT:${SERVER_PORT:8080}}
   servlet:
     context-path: /
 
@@ -9,14 +8,10 @@ spring:
     name: health-insurance-backend
 
   datasource:
-    url: ${DB_URL:jdbc:h2:file:./data/healthdb;DB_CLOSE_DELAY=-1;MODE=MySQL;AUTO_SERVER=TRUE}
-    username: ${DB_USERNAME:sa}
-    password: ${DB_PASSWORD:}
-    driver-class-name: ${DB_DRIVER:org.h2.Driver}
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    driver-class-name: ${DB_DRIVER}
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/health_insurance_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:YOUR_MYSQL_PASSWORD}
+    driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
 
   jpa:
     hibernate:
@@ -26,11 +21,9 @@ spring:
       hibernate:
         format_sql: true
 
-  # H2 Console configuration for testing (accessible at /h2-console in dev)
   h2:
     console:
-      enabled: true
-      path: /h2-console
+      enabled: false
 
 logging:
   level:
