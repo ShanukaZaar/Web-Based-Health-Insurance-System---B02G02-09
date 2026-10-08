@@ -21,12 +21,17 @@ public interface ClaimService {
 
     ClaimDTO approveClaim(Long id, BigDecimal approvedAmount);
 
+    /**
+     * Rejects a PENDING claim and moves it from claims to deleted_claims
+     * (archived in one transaction, then removed from claims).
+     */
     ClaimDTO rejectClaim(Long id, String rejectionReason);
 
-    /**
-     * Soft-deletes a claim by marking it WITHDRAWN. Only allowed while the
-     * claim is still PENDING — approved/rejected claims are permanent,
-     * read-only records and cannot be withdrawn.
-     */
     ClaimDTO withdrawClaim(Long id);
+
+    List<DeletedClaimDTO> getAllDeletedClaims();
+
+    DeletedClaimDTO getDeletedClaimById(Long id);
+
+    List<DeletedClaimDTO> getDeletedClaimsByUser(Long userId);
 }

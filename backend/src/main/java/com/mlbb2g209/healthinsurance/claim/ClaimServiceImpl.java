@@ -1,6 +1,7 @@
 package com.mlbb2g209.healthinsurance.claim;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -17,15 +18,15 @@ import java.util.stream.Collectors;
 @Service
 public class ClaimServiceImpl implements ClaimService {
 
-    // Files are stored on disk relative to where the backend process runs.
-    // Add "uploads/" to .gitignore -- this is runtime-generated content,
-    // not something that belongs in version control.
     private static final String UPLOAD_DIR = "uploads/claims/";
 
     private final ClaimRepository claimRepository;
+    private final DeletedClaimRepository deletedClaimRepository;
 
-    public ClaimServiceImpl(ClaimRepository claimRepository) {
+    public ClaimServiceImpl(ClaimRepository claimRepository,
+                            DeletedClaimRepository deletedClaimRepository) {
         this.claimRepository = claimRepository;
+        this.deletedClaimRepository = deletedClaimRepository;
     }
 
     @Override
@@ -65,8 +66,7 @@ public class ClaimServiceImpl implements ClaimService {
         claim.setDescription(claimDTO.getDescription());
         claim.setStatus(ClaimStatus.PENDING);
 
-        Claim saved = claimRepository.save(claim);
-        return toDTO(saved);
+        return toDTO(claimRepository.save(claim));
     }
 
     @Override
@@ -119,15 +119,28 @@ public class ClaimServiceImpl implements ClaimService {
     }
 
     @Override
+    @Transactional
     public ClaimDTO rejectClaim(Long id, String rejectionReason) {
         Claim claim = findClaimOrThrow(id);
         requirePendingStatus(claim);
 
+        if (rejectionReason == null || rejectionReason.isBlank()) {
+            throw new InvalidClaimStateException("A rejection reason is required.");
+        }
+
         claim.setStatus(ClaimStatus.REJECTED);
-        claim.setRejectionReason(rejectionReason);
+        claim.setRejectionReason(rejectionReason.trim());
         claim.setReviewedAt(LocalDateTime.now());
 
-        return toDTO(claimRepository.save(claim));
+        // 1) copy the full record into deleted_claims
+        deletedClaimRepository.save(toDeletedClaim(claim));
+
+        // 2) remove it from claims. Both steps run in one transaction, so if
+        //    either fails, both are rolled back and no data is lost.
+        claimRepository.delete(claim);
+
+        // The uploaded document stays on disk; deleted_claims keeps its path.
+        return toDTO(claim);
     }
 
     @Override
@@ -139,6 +152,27 @@ public class ClaimServiceImpl implements ClaimService {
         claim.setReviewedAt(LocalDateTime.now());
 
         return toDTO(claimRepository.save(claim));
+    }
+
+    @Override
+    public List<DeletedClaimDTO> getAllDeletedClaims() {
+        return deletedClaimRepository.findAll().stream()
+                .map(this::toDeletedDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public DeletedClaimDTO getDeletedClaimById(Long id) {
+        DeletedClaim deleted = deletedClaimRepository.findById(id)
+                .orElseThrow(() -> new ClaimNotFoundException(id));
+        return toDeletedDTO(deleted);
+    }
+
+    @Override
+    public List<DeletedClaimDTO> getDeletedClaimsByUser(Long userId) {
+        return deletedClaimRepository.findByUserId(userId).stream()
+                .map(this::toDeletedDTO)
+                .collect(Collectors.toList());
     }
 
     // ---------- helpers ----------
@@ -160,7 +194,8 @@ public class ClaimServiceImpl implements ClaimService {
         String candidate;
         do {
             candidate = "CLM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        } while (claimRepository.findByClaimNumber(candidate).isPresent());
+        } while (claimRepository.findByClaimNumber(candidate).isPresent()
+                || deletedClaimRepository.findByClaimNumber(candidate).isPresent());
         return candidate;
     }
 
@@ -170,6 +205,24 @@ public class ClaimServiceImpl implements ClaimService {
         } catch (IllegalArgumentException e) {
             throw new InvalidClaimStateException("Unknown claim status: " + status);
         }
+    }
+
+    private DeletedClaim toDeletedClaim(Claim claim) {
+        DeletedClaim deleted = new DeletedClaim();
+        deleted.setOriginalClaimId(claim.getId());
+        deleted.setClaimNumber(claim.getClaimNumber());
+        deleted.setUserId(claim.getUserId());
+        deleted.setPolicyId(claim.getPolicyId());
+        deleted.setClaimAmount(claim.getClaimAmount());
+        deleted.setApprovedAmount(claim.getApprovedAmount());
+        deleted.setStatus(claim.getStatus());
+        deleted.setDescription(claim.getDescription());
+        deleted.setDocumentPath(claim.getDocumentPath());
+        deleted.setRejectionReason(claim.getRejectionReason());
+        deleted.setReviewedAt(claim.getReviewedAt());
+        deleted.setOriginalCreatedAt(claim.getCreatedAt());
+        deleted.setDeletedAt(LocalDateTime.now());
+        return deleted;
     }
 
     private ClaimDTO toDTO(Claim claim) {
@@ -186,6 +239,25 @@ public class ClaimServiceImpl implements ClaimService {
         dto.setRejectionReason(claim.getRejectionReason());
         dto.setReviewedAt(claim.getReviewedAt());
         dto.setCreatedAt(claim.getCreatedAt());
+        return dto;
+    }
+
+    private DeletedClaimDTO toDeletedDTO(DeletedClaim deleted) {
+        DeletedClaimDTO dto = new DeletedClaimDTO();
+        dto.setId(deleted.getId());
+        dto.setOriginalClaimId(deleted.getOriginalClaimId());
+        dto.setClaimNumber(deleted.getClaimNumber());
+        dto.setUserId(deleted.getUserId());
+        dto.setPolicyId(deleted.getPolicyId());
+        dto.setClaimAmount(deleted.getClaimAmount());
+        dto.setApprovedAmount(deleted.getApprovedAmount());
+        dto.setStatus(deleted.getStatus() != null ? deleted.getStatus().name() : null);
+        dto.setDescription(deleted.getDescription());
+        dto.setDocumentPath(deleted.getDocumentPath());
+        dto.setRejectionReason(deleted.getRejectionReason());
+        dto.setReviewedAt(deleted.getReviewedAt());
+        dto.setOriginalCreatedAt(deleted.getOriginalCreatedAt());
+        dto.setDeletedAt(deleted.getDeletedAt());
         return dto;
     }
 }
