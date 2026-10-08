@@ -4,6 +4,7 @@ import {
   RefreshCw, X, AlertTriangle, UserPlus, Pencil, Save
 } from 'lucide-react';
 import adminService from '../../services/adminService';
+import { useToast } from '../../context/ToastContext';
 
 const ROLES = ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_AGENT'];
 
@@ -168,6 +169,7 @@ const UserForm = ({ form, handleFormChange, handleRoleToggle, formError, formLoa
 );
 
 const UserManagementTable = () => {
+  const { showToast } = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -219,8 +221,17 @@ const UserManagementTable = () => {
     try {
       await adminService.updateUserStatus(user.id, !user.isActive);
       fetchUsers();
-    } catch {
-      alert('Failed to update user status');
+      showToast(
+        `User account @${user.username} has been ${user.isActive ? 'deactivated' : 'activated'}.`,
+        'info',
+        'Account Status Changed'
+      );
+    } catch (err) {
+      showToast(
+        'Failed to update user status: ' + (err?.response?.data?.message || err.message),
+        'error',
+        'Status Update Error'
+      );
     }
   };
 
@@ -228,10 +239,19 @@ const UserManagementTable = () => {
     if (!userToDelete) return;
     try {
       await adminService.deleteUser(userToDelete.id);
+      showToast(
+        `User account @${userToDelete.username} deleted from system directory.`,
+        'warning',
+        'User Deleted'
+      );
       setUserToDelete(null);
       fetchUsers();
-    } catch {
-      alert('Failed to delete user');
+    } catch (err) {
+      showToast(
+        'Failed to delete user: ' + (err?.response?.data?.message || err.message),
+        'error',
+        'Deletion Error'
+      );
     }
   };
 
@@ -294,8 +314,15 @@ const UserManagementTable = () => {
       });
       setShowCreateModal(false);
       fetchUsers();
+      showToast(
+        `User account @${form.username.trim()} (${form.firstName.trim()} ${form.lastName.trim()}) created successfully.`,
+        'success',
+        'User Created'
+      );
     } catch (err) {
-      setFormError(err?.response?.data?.message || 'Failed to create user. Please check inputs.');
+      const msg = err?.response?.data?.message || 'Failed to create user. Please check inputs.';
+      setFormError(msg);
+      showToast(msg, 'error', 'Creation Error');
     } finally {
       setFormLoading(false);
     }
@@ -320,8 +347,15 @@ const UserManagementTable = () => {
       });
       setEditUser(null);
       fetchUsers();
+      showToast(
+        `User profile for @${editUser.username} updated successfully.`,
+        'success',
+        'User Updated'
+      );
     } catch (err) {
-      setFormError(err?.response?.data?.message || 'Failed to update user. Please check inputs.');
+      const msg = err?.response?.data?.message || 'Failed to update user. Please check inputs.';
+      setFormError(msg);
+      showToast(msg, 'error', 'Update Error');
     } finally {
       setFormLoading(false);
     }

@@ -8,157 +8,28 @@ import {
   CheckCircle2, 
   Clock, 
   AlertCircle, 
+  XCircle,
+  Eye,
+  Edit3,
+  Trash2,
+  User,
+  X,
   MessageSquare, 
-  RefreshCw, 
-  Send, 
-  User, 
-  Bot, 
-  X,
-  ChevronRight,
-  ShieldAlert
-} from 'lucide-react';
-import supportService from '../services/supportService';
-
-const fallbackTickets = [
-  {
-    id: 1,
-    ticketNumber: 'TKT-5001',
-    userId: 1,
-    customerName: 'John Doe',
-    subject: 'Policy Auto-Renewal Question',
-    description: 'Would like to know if my Comprehensive Health Shield coverage renews automatically next month, or if I need to re-verify payment credentials.',
-    status: 'OPEN',
-    priority: 'MEDIUM',
-    category: 'POLICY_RENEWAL',
-    createdAt: '2026-10-03T11:20:00',
-    aiDraft: "Dear John, your Comprehensive Health Shield policy (POL-1001) is enrolled in automated recurring billing. Your coverage will seamlessly renew on your anniversary date with your card on file.",
-  },
-  {
-    id: 2,
-    ticketNumber: 'TKT-5002',
-    userId: 2,
-    customerName: 'Sarah Connor',
-    subject: 'Claim Reimbursement Delay Inquiry',
-    description: 'Submitted claim CLM-8002 three days ago for ICU admission diagnostic scan, checking expected settlement timeframe.',
-    status: 'IN_PROGRESS',
-    priority: 'HIGH',
-    category: 'CLAIM_STATUS',
-    createdAt: '2026-10-04T09:15:00',
-    aiDraft: "Hello Sarah, your claim CLM-8002 ($24,800.00) has passed AI OCR verification and is currently in final underwriter signoff. Expected disbursement is within 24 business hours.",
-  },
-  {
-    id: 3,
-    ticketNumber: 'TKT-5003',
-    userId: 3,
-    customerName: 'Mike Smith',
-    subject: 'Empanelled Hospital List Clarification',
-    description: 'Inquiring if Sunrise Community Clinic is eligible for cashless direct billing under the Senior Citizen care package.',
-    status: 'RESOLVED',
-    priority: 'LOW',
-    category: 'HOSPITAL_NETWORK',
-    createdAt: '2026-10-02T14:50:00',
-    aiDraft: "Hello Mike, Sunrise Community Clinic currently operates under reimbursement claims rather than cashless desks. You may file your receipts directly in the Claims portal for rapid processing.",
-  },
-];
-
-const CustomerSupport = () => {
-  const [tickets, setTickets] = useState(fallbackTickets);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('ALL');
-  
-  // Modals & Details
-  const [selectedTicket, setSelectedTicket] = useState(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [generatedAiReply, setGeneratedAiReply] = useState('');
-  const [generatingAi, setGeneratingAi] = useState(false);
-
-  // New Ticket Form
-  const [newTicket, setNewTicket] = useState({
-    subject: '',
-    description: '',
-    priority: 'MEDIUM',
-    category: 'GENERAL_INQUIRY'
-  });
-  const [submitting, setSubmitting] = useState(false);
-
-  const fetchTickets = async () => {
-    setLoading(true);
-    try {
-      const res = await supportService.getAllTickets();
-      if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
-        const enriched = res.data.map((t, i) => ({
-          ...t,
-          ticketNumber: t.ticketNumber || `TKT-500${t.id}`,
-          customerName: t.userId === 1 ? 'John Doe' : t.userId === 2 ? 'Sarah Connor' : 'Mike Smith',
-          category: t.category || (i === 0 ? 'POLICY_RENEWAL' : i === 1 ? 'CLAIM_STATUS' : 'HOSPITAL_NETWORK'),
-          aiDraft: fallbackTickets[i % fallbackTickets.length]?.aiDraft || "Thank you for reaching out. An insurance customer care specialist has reviewed your inquiry.",
-        }));
-        setTickets(enriched);
-      }
-    } catch (err) {
-      console.warn('API returned fallback support tickets:', err);
-  Plus, 
-  Search, 
-  RefreshCw, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  XCircle, 
-  Eye, 
-  Edit3, 
-  Trash2, 
-  User, 
-  X,
-  MessageSquare,
   AlertTriangle,
   FileText,
-  Sparkles,
-  Wifi,
-  WifiOff
+  RefreshCw, 
+  Send, 
+  Bot, 
+  ChevronRight, 
+  ShieldAlert 
 } from 'lucide-react';
 import supportService from '../services/supportService';
-
-// Initial fallback sample data to guarantee immediate testing capability
-const INITIAL_DEMO_TICKETS = [
-  {
-    id: 1,
-    ticketNumber: 'TKT-1001-DEMO',
-    userId: 2,
-    subject: 'Hospitalization Claim Status Query',
-    description: 'Inquiring about the progress of claim #CLM-5021 for my recent emergency room visit. Requesting update on approval timelines.',
-    priority: 'HIGH',
-    status: 'OPEN',
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 2).toISOString()
-  },
-  {
-    id: 2,
-    ticketNumber: 'TKT-1002-DEMO',
-    userId: 3,
-    subject: 'Policy Premium Payment Modification',
-    description: 'Need assistance changing my recurring payment card for annual health coverage policy renewal.',
-    priority: 'MEDIUM',
-    status: 'IN_PROGRESS',
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 1).toISOString()
-  },
-  {
-    id: 3,
-    ticketNumber: 'TKT-1003-DEMO',
-    userId: 5,
-    subject: 'Empaneled Network Hospital Inquiry',
-    description: 'Could you please confirm if St. Jude City Hospital is in-network under the Comprehensive Gold Plan?',
-    priority: 'LOW',
-    status: 'RESOLVED',
-    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 3).toISOString()
-  }
-];
+import { useToast } from '../context/ToastContext';
 
 const CustomerSupport = () => {
-  const [tickets, setTickets] = useState(INITIAL_DEMO_TICKETS);
-  const [loading, setLoading] = useState(false);
+  const { showToast: showGlobalToast } = useToast();
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [backendConnected, setBackendConnected] = useState(false);
   const [error, setError] = useState(null);
   const [actionSuccess, setActionSuccess] = useState(null);
@@ -186,7 +57,7 @@ const CustomerSupport = () => {
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch Tickets from Backend API with fallback
+  // Fetch Tickets from Backend API
   const fetchTickets = async () => {
     setLoading(true);
     setError(null);
@@ -207,12 +78,10 @@ const CustomerSupport = () => {
         setBackendConnected(true);
       }
     } catch (err) {
-      console.warn('Backend API connection offline/unavailable. Falling back to local interactive mode:', err.message);
+      console.error('Backend API error loading tickets:', err);
       setBackendConnected(false);
-      // Keep existing tickets or fallback demo tickets so testing is unbroken
-      if (tickets.length === 0) {
-        setTickets(INITIAL_DEMO_TICKETS);
-      }
+      setError('Unable to fetch tickets from backend database. Make sure backend is running.');
+      setTickets([]);
     } finally {
       setLoading(false);
     }
@@ -220,341 +89,13 @@ const CustomerSupport = () => {
 
   useEffect(() => {
     fetchTickets();
-  }, []);
-
-  const handleGenerateAiResponse = (ticket) => {
-    setGeneratingAi(true);
-    setTimeout(() => {
-      setGeneratedAiReply(
-        ticket.aiDraft ||
-        `Dear ${ticket.customerName}, regarding your inquiry on "${ticket.subject}": our system has verified your account standing. Your records have been updated and our support SLA guarantees resolution within 2 hours.`
-      );
-      setGeneratingAi(false);
-    }, 400);
-  };
-
-  const handleCreateTicket = async (e) => {
-    e.preventDefault();
-    if (!newTicket.subject || !newTicket.description) return;
-
-    setSubmitting(true);
-    try {
-      const payload = {
-        userId: 1,
-        subject: newTicket.subject,
-        description: newTicket.description,
-        status: 'OPEN',
-        priority: newTicket.priority
-      };
-
-      await supportService.createTicket(payload).catch(() => null);
-
-      const created = {
-        id: tickets.length + 1,
-        ticketNumber: `TKT-500${tickets.length + 1}`,
-        userId: 1,
-        customerName: 'John Doe',
-        subject: newTicket.subject,
-        description: newTicket.description,
-        status: 'OPEN',
-        priority: newTicket.priority,
-        category: newTicket.category,
-        createdAt: new Date().toISOString(),
-        aiDraft: "Thank you for contacting CarePulse support. We have logged your request and prioritized response based on your active plan tier.",
-      };
-
-      setTickets([created, ...tickets]);
-      setShowCreateModal(false);
-      setNewTicket({ subject: '', description: '', priority: 'MEDIUM', category: 'GENERAL_INQUIRY' });
-    } catch (err) {
-      alert('Failed to create ticket.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const filteredTickets = (tickets || []).filter((t) => {
-    if (!t) return false;
-    const q = (search || '').toLowerCase();
-    const subj = t.subject || '';
-    const desc = t.description || '';
-    const cust = t.customerName || '';
-    const tkt = t.ticketNumber || '';
-
-    const matchesSearch = 
-      subj.toLowerCase().includes(q) ||
-      desc.toLowerCase().includes(q) ||
-      cust.toLowerCase().includes(q) ||
-      tkt.toLowerCase().includes(q);
-
-    if (!matchesSearch) return false;
-    if (priorityFilter !== 'ALL' && t.priority !== priorityFilter) return false;
-    return true;
-  });
-
-  return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-blue-800 uppercase tracking-widest bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
-              Customer Experience
-            </span>
-            <span className="text-xs text-slate-500">• MLBB2G209</span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5 mt-2">
-            <LifeBuoy className="w-7 h-7 text-blue-600" />
-            Support Desk & Inquiries
-          </h1>
-          <p className="text-slate-600 text-sm mt-1">
-            Resolve policyholder inquiries, track SLA resolution timeframes, and generate instant customer responses.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={fetchTickets}
-            className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg transition-colors shadow-xs"
-            title="Refresh Tickets"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-600' : ''}`} />
-          </button>
-          
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg font-semibold text-xs sm:text-sm transition-colors shadow-xs"
-          >
-            <Plus className="w-4 h-4" />
-            Create Inquiry Ticket
-          </button>
-        </div>
-      </div>
-
-      {/* KPI Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-3.5">
-          <div className="p-3 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
-            <LifeBuoy className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Open Inquiries</span>
-            <span className="text-xl font-bold text-slate-900">{tickets.filter(t => t.status !== 'RESOLVED').length} Active Tickets</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-3.5">
-          <div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">AI Auto-Draft SLA</span>
-            <span className="text-xl font-bold text-emerald-700">Instant AI Responses</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-3.5">
-          <div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Satisfaction Index</span>
-            <span className="text-xl font-bold text-emerald-700">98.2% CSAT</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Search & Priority Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search ticket subject, patient, keyword..."
-            className="w-full bg-slate-50 border border-slate-200 text-slate-900 pl-10 pr-4 py-2 rounded-lg text-xs sm:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-1 focus:ring-emerald-600 transition-all placeholder:text-slate-400"
-          />
-        </div>
-
-        <div className="flex items-center gap-1.5 overflow-x-auto p-1 bg-slate-50 rounded-lg border border-slate-200">
-          {['ALL', 'HIGH', 'MEDIUM', 'LOW'].map((p) => (
-            <button
-              key={p}
-              onClick={() => setPriorityFilter(p)}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${
-                priorityFilter === p
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              {p === 'ALL' ? 'All Priorities' : `${p} Priority`}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Ticket List */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Ticket List (Left 2 Cols) */}
-        <div className="lg:col-span-2 space-y-3.5">
-          {filteredTickets.map((t) => (
-            <div
-              key={t.id}
-              onClick={() => {
-                setSelectedTicket(t);
-                setGeneratedAiReply(t.aiDraft);
-              }}
-              className={`bg-white p-5 rounded-xl border transition-all cursor-pointer ${
-                selectedTicket?.id === t.id
-                  ? 'border-emerald-600 shadow-sm'
-                  : 'border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="font-mono text-xs font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                      {t.ticketNumber}
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100">
-                      {t.category || 'INQUIRY'}
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900">
-                    {t.subject}
-                  </h3>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${
-                    t.priority === 'HIGH'
-                      ? 'bg-red-50 text-red-800 border-red-200'
-                      : t.priority === 'MEDIUM'
-                      ? 'bg-amber-50 text-amber-800 border-amber-200'
-                      : 'bg-slate-100 text-slate-700 border-slate-200'
-                  }`}>
-                    {t.priority}
-                  </span>
-
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${
-                    t.status === 'RESOLVED'
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                      : t.status === 'IN_PROGRESS'
-                      ? 'bg-blue-50 text-blue-800 border-blue-200'
-                      : 'bg-slate-100 text-slate-700 border-slate-200'
-                  }`}>
-                    {t.status}
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-xs text-slate-600 mt-2 line-clamp-2 leading-relaxed">
-                {t.description}
-              </p>
-
-              <div className="pt-3 border-t border-slate-100 mt-3 flex items-center justify-between text-xs text-slate-500">
-                <div className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{t.customerName}</span>
-                </div>
-                <div className="flex items-center gap-1 text-emerald-700 font-semibold text-[11px]">
-                  <Sparkles className="w-3 h-3" />
-                  <span>AI Draft Ready</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* AI Suggested Response Panel (Right 1 Col) */}
-        <div className="bg-white p-5 sm:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4 h-fit">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
-                <Bot className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">AI Response Copilot</h3>
-                <span className="text-[10px] text-slate-500">Instant Customer Response Generator</span>
-              </div>
-            </div>
-          </div>
-
-          {selectedTicket ? (
-            <div className="space-y-4 text-xs">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <span className="text-slate-500 uppercase tracking-wider block text-[10px] font-semibold mb-1">
-                  Active Inquiry ({selectedTicket.ticketNumber})
-                </span>
-                <div className="font-bold text-slate-900">{selectedTicket.subject}</div>
-                <p className="text-slate-600 mt-1">{selectedTicket.description}</p>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                    AI Suggested Response
-                  </span>
-                  <button
-                    onClick={() => handleGenerateAiResponse(selectedTicket)}
-                    disabled={generatingAi}
-                    className="text-[11px] font-semibold text-blue-700 hover:text-blue-800"
-                  >
-                    {generatingAi ? 'Generating...' : 'Regenerate'}
-                  </button>
-                </div>
-
-                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 leading-relaxed">
-                  {generatingAi ? (
-                    <div className="flex items-center gap-2 text-slate-600 animate-pulse">
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />
-                      <span>Drafting response...</span>
-                    </div>
-                  ) : (
-                    generatedAiReply || selectedTicket.aiDraft
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  onClick={() => {
-                    alert(`Response dispatched to ${selectedTicket.customerName}'s email! Ticket status updated.`);
-                  }}
-                  className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-semibold text-xs shadow-xs transition-colors"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  Approve & Send to Customer
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="py-12 text-center text-slate-400 text-xs">
-              <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-40 text-slate-400" />
-              Select a support ticket from the list to view inquiry details and generate an instant AI response.
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* CREATE TICKET MODAL */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-lg rounded-xl border border-slate-200 p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-emerald-600" />
-                Open New Support Ticket
-              </h3>
-              <button onClick={() => setShowCreateModal(false)} className="p-1 text-slate-400 hover:text-slate-600">
   }, [selectedStatus]);
 
   // Flash notification helper
-  const showToast = (message) => {
+  const showToast = (message, type = 'success', title = null) => {
     setActionSuccess(message);
     setTimeout(() => setActionSuccess(null), 4000);
+    showGlobalToast(message, type, title);
   };
 
   // Form Input Change Handler
@@ -601,36 +142,23 @@ const CustomerSupport = () => {
     };
 
     try {
-      // Attempt backend REST call
       const createdTicket = await supportService.createTicket(payload);
-      if (createdTicket && (createdTicket.id || createdTicket.ticketNumber)) {
-        setTickets((prev) => [createdTicket, ...prev]);
-        setBackendConnected(true);
-        showToast(`Ticket ${createdTicket.ticketNumber || `#${createdTicket.id}`} created successfully!`);
-      } else {
-        throw new Error('Backend returned invalid ticket payload');
-      }
-    } catch (err) {
-      console.warn('Backend create ticket failed or server offline. Performing local creation:', err);
-      // Local fallback creation so testing is NEVER blocked
-      const newId = Date.now();
-      const localTicket = {
-        id: newId,
-        ticketNumber: `TKT-${Math.floor(1000 + Math.random() * 9000)}-LOCAL`,
-        userId: payload.userId,
-        subject: payload.subject,
-        description: payload.description,
-        priority: payload.priority,
-        status: payload.status,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      setTickets((prev) => [localTicket, ...prev]);
-      showToast(`Ticket ${localTicket.ticketNumber} created successfully! (Local Mode)`);
-    } finally {
-      setSubmitting(false);
+      setBackendConnected(true);
+      showToast(
+        `Support ticket ${createdTicket?.ticketNumber || `#${createdTicket?.id || ''}`} created successfully with ${formData.priority} priority.`,
+        'success',
+        'Ticket Created'
+      );
       setIsCreateModalOpen(false);
       resetForm();
+      fetchTickets();
+    } catch (err) {
+      console.error('Failed to create ticket on backend:', err);
+      const errMsg = 'Failed to create ticket: ' + (err.response?.data?.message || err.message);
+      setError(errMsg);
+      showToast(errMsg, 'error', 'Creation Error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -653,19 +181,22 @@ const CustomerSupport = () => {
     try {
       await supportService.updateTicket(selectedTicket.id, payload);
       setBackendConnected(true);
-      showToast(`Ticket ${selectedTicket.ticketNumber || `#${selectedTicket.id}`} updated on server!`);
-    } catch (err) {
-      console.warn('Backend update ticket offline/error. Updating local state:', err);
-      showToast(`Ticket ${selectedTicket.ticketNumber || `#${selectedTicket.id}`} updated! (Local Mode)`);
-    } finally {
-      // Always update local state
-      setTickets((prev) =>
-        prev.map((t) => (t.id === selectedTicket.id ? { ...t, ...payload, updatedAt: new Date().toISOString() } : t))
+      showToast(
+        `Ticket ${selectedTicket.ticketNumber || `#${selectedTicket.id}`} details and priority updated successfully.`,
+        'success',
+        'Ticket Updated'
       );
-      setSubmitting(false);
       setIsEditModalOpen(false);
       setSelectedTicket(null);
       resetForm();
+      fetchTickets();
+    } catch (err) {
+      console.error('Failed to update ticket on backend:', err);
+      const errMsg = 'Failed to update ticket: ' + (err.response?.data?.message || err.message);
+      setError(errMsg);
+      showToast(errMsg, 'error', 'Update Error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -678,14 +209,20 @@ const CustomerSupport = () => {
     try {
       await supportService.deleteTicket(ticketToDelete.id);
       setBackendConnected(true);
-      showToast(`Ticket ${ticketToDelete.ticketNumber || `#${ticketToDelete.id}`} deleted from server!`);
-    } catch (err) {
-      console.warn('Backend delete ticket offline/error. Deleting from local state:', err);
-      showToast(`Ticket ${ticketToDelete.ticketNumber || `#${ticketToDelete.id}`} deleted! (Local Mode)`);
-    } finally {
-      setTickets((prev) => prev.filter((t) => t.id !== ticketToDelete.id));
-      setSubmitting(false);
+      showToast(
+        `Ticket ${ticketToDelete.ticketNumber || `#${ticketToDelete.id}`} has been permanently deleted from support registry.`,
+        'info',
+        'Ticket Deleted'
+      );
       setTicketToDelete(null);
+      fetchTickets();
+    } catch (err) {
+      console.error('Failed to delete ticket on backend:', err);
+      const errMsg = 'Failed to delete ticket: ' + (err.response?.data?.message || err.message);
+      setError(errMsg);
+      showToast(errMsg, 'error', 'Deletion Error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -694,16 +231,17 @@ const CustomerSupport = () => {
     try {
       await supportService.updateTicket(ticket.id, { ...ticket, status: newStatus });
       setBackendConnected(true);
-    } catch (err) {
-      console.warn('Backend status update offline/error. Updating locally:', err);
-    } finally {
-      setTickets((prev) =>
-        prev.map((t) => (t.id === ticket.id ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t))
+      showToast(
+        `Ticket ${ticket.ticketNumber || '#' + ticket.id} status transitioned to "${newStatus}".`,
+        'info',
+        'Status Changed'
       );
-      if (selectedTicket && selectedTicket.id === ticket.id) {
-        setSelectedTicket((prev) => ({ ...prev, status: newStatus }));
-      }
-      showToast(`Ticket status updated to ${newStatus}`);
+      fetchTickets();
+    } catch (err) {
+      console.error('Failed to update status on backend:', err);
+      const errMsg = 'Failed to update status: ' + (err.response?.data?.message || err.message);
+      setError(errMsg);
+      showToast(errMsg, 'error', 'Status Update Error');
     }
   };
 
@@ -732,11 +270,6 @@ const CustomerSupport = () => {
     setIsEditModalOpen(true);
   };
 
-  // Seed sample tickets button action
-  const handleSeedDemoData = () => {
-    setTickets(INITIAL_DEMO_TICKETS);
-    showToast('Loaded sample dummy support tickets.');
-  };
 
   // Filtered Tickets Computation
   const filteredTickets = tickets.filter((t) => {
@@ -763,31 +296,31 @@ const CustomerSupport = () => {
     switch (status) {
       case 'OPEN':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
             <AlertCircle className="w-3.5 h-3.5" /> Open
           </span>
         );
       case 'IN_PROGRESS':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
             <Clock className="w-3.5 h-3.5" /> In Progress
           </span>
         );
       case 'RESOLVED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
             <CheckCircle2 className="w-3.5 h-3.5" /> Resolved
           </span>
         );
       case 'CLOSED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-500/15 text-slate-400 border border-slate-500/30">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
             <XCircle className="w-3.5 h-3.5" /> Closed
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-slate-800 text-slate-300">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600">
             {status || 'UNKNOWN'}
           </span>
         );
@@ -797,69 +330,50 @@ const CustomerSupport = () => {
   const renderPriorityBadge = (priority) => {
     switch (priority) {
       case 'URGENT':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">URGENT</span>;
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-800 border border-red-200">URGENT</span>;
       case 'HIGH':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">HIGH</span>;
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">HIGH</span>;
       case 'MEDIUM':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-sky-500/15 text-sky-300 border border-sky-500/20">MEDIUM</span>;
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-800 border border-blue-200">MEDIUM</span>;
       case 'LOW':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-500/20 text-slate-300 border border-slate-500/30">LOW</span>;
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">LOW</span>;
       default:
-        return <span className="px-2.5 py-1 rounded-full text-xs bg-slate-800 text-slate-400">{priority}</span>;
+        return <span className="px-2.5 py-0.5 rounded-full text-xs bg-slate-100 text-slate-500">{priority}</span>;
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 glass-panel p-6 rounded-2xl border border-slate-800">
+    <div className="space-y-6 animate-in fade-in duration-200">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
-              <LifeBuoy className="w-7 h-7" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-                Customer Support Management
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                {backendConnected ? (
-                  <span className="inline-flex items-center gap-1 text-xs text-emerald-400 font-medium">
-                    <Wifi className="w-3.5 h-3.5" /> Backend Online (Spring Boot API)
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-xs text-amber-400 font-medium">
-                    <WifiOff className="w-3.5 h-3.5" /> Interactive UI Testing Mode
-                  </span>
-                )}
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-emerald-800 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
+              Customer Support
+            </span>
           </div>
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5 mt-2">
+            <LifeBuoy className="w-7 h-7 text-emerald-600" />
+            Support Tickets & Service Desk
+          </h1>
+          <p className="text-slate-600 text-sm mt-1">
+            Manage customer inquiries, track issue resolution, and maintain service quality standards.
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <button
             onClick={fetchTickets}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-medium bg-slate-800/80 hover:bg-slate-800 text-slate-200 border border-slate-700/60 transition"
+            className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg transition-colors shadow-xs"
             title="Refresh from server"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-sky-400' : ''}`} />
-            Sync API
-          </button>
-
-          <button
-            onClick={handleSeedDemoData}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-sky-300 border border-sky-500/30 transition"
-            title="Reset sample test tickets"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-            Seed Sample Data
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-600' : ''}`} />
           </button>
 
           <button 
             onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-sky-500/20 transition cursor-pointer"
+            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg font-semibold text-xs sm:text-sm transition-colors shadow-xs"
           >
             <Plus className="w-4 h-4" />
             Create Ticket
@@ -869,12 +383,12 @@ const CustomerSupport = () => {
 
       {/* Toast Notification */}
       {actionSuccess && (
-        <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 px-4 py-3 rounded-xl flex items-center justify-between text-sm animate-fade-in shadow-lg">
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl flex items-center justify-between text-sm animate-in fade-in shadow-xs">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <span className="font-medium">{actionSuccess}</span>
           </div>
-          <button onClick={() => setActionSuccess(null)} className="text-emerald-400 hover:text-white p-1">
+          <button onClick={() => setActionSuccess(null)} className="text-emerald-600 hover:text-emerald-800 p-1">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -882,12 +396,12 @@ const CustomerSupport = () => {
 
       {/* Error Banner */}
       {error && (
-        <div className="bg-rose-500/15 border border-rose-500/30 text-rose-300 px-4 py-3 rounded-xl flex items-center justify-between text-sm">
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-rose-400" />
+            <AlertTriangle className="w-5 h-5 text-red-600" />
             <span>{error}</span>
           </div>
-          <button onClick={() => setError(null)} className="text-rose-400 hover:text-white p-1">
+          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800 p-1">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -895,61 +409,61 @@ const CustomerSupport = () => {
 
       {/* Metrics Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card p-5 rounded-2xl border border-slate-800/80">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Tickets</span>
-            <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400">
-              <FileText className="w-5 h-5" />
-            </div>
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-3.5">
+          <div className="p-3 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
+            <FileText className="w-5 h-5" />
           </div>
-          <p className="text-3xl font-bold text-slate-100 mt-2">{loading ? '...' : totalCount}</p>
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Total Tickets</span>
+            <span className="text-xl font-bold text-slate-900">{loading ? '...' : totalCount} Indexed</span>
+          </div>
         </div>
 
-        <div className="glass-card p-5 rounded-2xl border border-slate-800/80">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-sky-400 uppercase tracking-wider">Open Tickets</span>
-            <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400">
-              <AlertCircle className="w-5 h-5" />
-            </div>
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-3.5">
+          <div className="p-3 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
+            <AlertCircle className="w-5 h-5" />
           </div>
-          <p className="text-3xl font-bold text-sky-400 mt-2">{loading ? '...' : openCount}</p>
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Open Tickets</span>
+            <span className="text-xl font-bold text-blue-700">{loading ? '...' : openCount} Pending</span>
+          </div>
         </div>
 
-        <div className="glass-card p-5 rounded-2xl border border-slate-800/80">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">In Progress</span>
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
-              <Clock className="w-5 h-5" />
-            </div>
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-3.5">
+          <div className="p-3 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
+            <Clock className="w-5 h-5" />
           </div>
-          <p className="text-3xl font-bold text-amber-400 mt-2">{loading ? '...' : inProgressCount}</p>
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">In Progress</span>
+            <span className="text-xl font-bold text-amber-700">{loading ? '...' : inProgressCount} Active</span>
+          </div>
         </div>
 
-        <div className="glass-card p-5 rounded-2xl border border-slate-800/80">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Resolved / Closed</span>
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-3.5">
+          <div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <CheckCircle2 className="w-5 h-5" />
           </div>
-          <p className="text-3xl font-bold text-emerald-400 mt-2">{loading ? '...' : resolvedCount}</p>
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Resolved / Closed</span>
+            <span className="text-xl font-bold text-emerald-700">{loading ? '...' : resolvedCount} Completed</span>
+          </div>
         </div>
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         {/* Search Input */}
         <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
           <input
             type="text"
             placeholder="Filter ticket #, subject, or user ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-900/90 text-slate-200 text-sm pl-10 pr-4 py-2 rounded-xl border border-slate-700/60 focus:outline-none focus:border-sky-500 placeholder-slate-500 transition"
+            className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-1 focus:ring-emerald-600 transition-all placeholder:text-slate-400"
           />
           {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
               <X className="w-3.5 h-3.5" />
             </button>
           )}
@@ -957,15 +471,15 @@ const CustomerSupport = () => {
 
         {/* Filter Tabs */}
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <div className="flex bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs overflow-x-auto w-full sm:w-auto">
+          <div className="flex items-center gap-1.5 overflow-x-auto p-1 bg-slate-50 rounded-lg border border-slate-200">
             {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map((st) => (
               <button
                 key={st}
                 onClick={() => setSelectedStatus(st)}
-                className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${
                   selectedStatus === st
-                    ? 'bg-sky-500 text-white shadow'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
               >
                 {st === 'ALL' ? 'All Statuses' : st.replace('_', ' ')}
@@ -976,7 +490,7 @@ const CustomerSupport = () => {
           <select
             value={selectedPriority}
             onChange={(e) => setSelectedPriority(e.target.value)}
-            className="bg-slate-900/90 text-slate-300 text-xs px-3 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-sky-500"
+            className="bg-slate-50 text-slate-700 text-xs px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-600"
           >
             <option value="ALL">All Priorities</option>
             <option value="LOW">Low</option>
@@ -988,33 +502,27 @@ const CustomerSupport = () => {
       </div>
 
       {/* Tickets Table (CRUD - Read / List) */}
-      <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
         {loading ? (
           <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-3">
-            <RefreshCw className="w-8 h-8 animate-spin text-sky-400" />
+            <RefreshCw className="w-8 h-8 animate-spin text-emerald-600" />
             <p className="text-sm">Fetching support tickets...</p>
           </div>
         ) : filteredTickets.length === 0 ? (
           <div className="p-12 text-center text-slate-400 space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
               <MessageSquare className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-medium text-slate-300">No Tickets Found</h3>
+            <h3 className="text-lg font-medium text-slate-700">No Tickets Found</h3>
             <p className="text-sm text-slate-500 max-w-sm mx-auto">
               {searchTerm || selectedStatus !== 'ALL' || selectedPriority !== 'ALL'
                 ? 'No tickets match your filters.'
-                : 'There are currently no tickets. Click below to add a new ticket or load sample data.'}
+                : 'There are currently no tickets in the database. Click below to create a new ticket.'}
             </p>
             <div className="flex justify-center gap-3 pt-2">
               <button
-                onClick={handleSeedDemoData}
-                className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-sky-300 px-3.5 py-1.5 rounded-lg text-xs font-medium border border-sky-500/30"
-              >
-                <Sparkles className="w-3.5 h-3.5" /> Load Sample Data
-              </button>
-              <button
                 onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
-                className="inline-flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-medium"
+                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" /> Create New Ticket
               </button>
@@ -1022,75 +530,75 @@ const CustomerSupport = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-300">
-              <thead className="bg-slate-900/80 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
-                <tr>
-                  <th className="px-5 py-3.5">Ticket #</th>
-                  <th className="px-5 py-3.5">User</th>
-                  <th className="px-5 py-3.5">Subject & Details</th>
-                  <th className="px-5 py-3.5">Priority</th>
-                  <th className="px-5 py-3.5">Status</th>
-                  <th className="px-5 py-3.5">Created Date</th>
-                  <th className="px-5 py-3.5 text-right">Actions</th>
+            <table className="w-full text-left text-xs sm:text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500 uppercase text-[11px] tracking-wider bg-slate-50/75">
+                  <th className="py-3 px-4 font-semibold">Ticket #</th>
+                  <th className="py-3 px-4 font-semibold">User</th>
+                  <th className="py-3 px-4 font-semibold">Subject & Details</th>
+                  <th className="py-3 px-4 font-semibold">Priority</th>
+                  <th className="py-3 px-4 font-semibold">Status</th>
+                  <th className="py-3 px-4 font-semibold">Created Date</th>
+                  <th className="py-3 px-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-slate-100">
                 {filteredTickets.map((ticket) => (
-                  <tr key={ticket.id} className="hover:bg-slate-800/40 transition">
-                    <td className="px-5 py-4 font-mono text-xs text-sky-300 font-semibold">
+                  <tr key={ticket.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-slate-800">
                       {ticket.ticketNumber || `#${ticket.id}`}
                     </td>
 
-                    <td className="px-5 py-4">
+                    <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-medium border border-slate-700">
+                        <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-medium border border-slate-200">
                           <User className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-xs font-medium text-slate-200">
+                        <span className="text-xs font-semibold text-slate-900">
                           User #{ticket.userId}
                         </span>
                       </div>
                     </td>
 
-                    <td className="px-5 py-4 max-w-xs">
-                      <p className="font-medium text-slate-100 truncate">{ticket.subject}</p>
-                      <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">{ticket.description}</p>
+                    <td className="py-3 px-4 max-w-xs">
+                      <p className="font-semibold text-slate-900 truncate">{ticket.subject}</p>
+                      <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{ticket.description}</p>
                     </td>
 
-                    <td className="px-5 py-4">
+                    <td className="py-3 px-4">
                       {renderPriorityBadge(ticket.priority)}
                     </td>
 
-                    <td className="px-5 py-4">
+                    <td className="py-3 px-4">
                       {renderStatusBadge(ticket.status)}
                     </td>
 
-                    <td className="px-5 py-4 text-xs text-slate-400">
+                    <td className="py-3 px-4 text-xs text-slate-500">
                       {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : 'Just now'}
                     </td>
 
-                    <td className="px-5 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => { setSelectedTicket(ticket); setIsViewModalOpen(true); }}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-sky-400 transition"
+                          className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors border border-slate-200"
                           title="View Details"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleOpenEdit(ticket)}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 transition"
+                          className="p-1.5 bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-700 rounded-lg transition-colors border border-slate-200"
                           title="Edit Ticket"
                         >
-                          <Edit3 className="w-4 h-4" />
+                          <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setTicketToDelete(ticket)}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 transition"
+                          className="p-1.5 bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 rounded-lg transition-colors border border-slate-200"
                           title="Delete Ticket"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -1104,61 +612,24 @@ const CustomerSupport = () => {
 
       {/* CREATE TICKET MODAL (CRUD - Create) */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-lg rounded-2xl border border-slate-800 shadow-2xl p-6 relative space-y-5 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-sky-400" /> Create Support Ticket
-              </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-lg rounded-xl border border-slate-200 p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Plus className="w-5 h-5 text-emerald-600" /> Create Support Ticket
+              </h3>
               <button 
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                className="p-1 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateTicket} className="space-y-4 text-xs sm:text-sm">
+            <form onSubmit={handleCreateSubmit} className="space-y-4 text-xs sm:text-sm">
               <div>
-                <label className="text-slate-700 font-medium block mb-1">Subject *</label>
-                <input
-                  type="text"
-                  required
-                  value={newTicket.subject}
-                  onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
-                  placeholder="e.g. Inpatient Pre-Authorization Inquiry"
-                  className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-700 font-medium block mb-1">Priority</label>
-                  <select
-                    value={newTicket.priority}
-                    onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
-                  >
-                    <option value="HIGH">HIGH (Urgent SLA)</option>
-                    <option value="MEDIUM">MEDIUM</option>
-                    <option value="LOW">LOW</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-slate-700 font-medium block mb-1">Category</label>
-                  <select
-                    value={newTicket.category}
-                    onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
-                  >
-                    <option value="POLICY_RENEWAL">Policy Renewal</option>
-                    <option value="CLAIM_STATUS">Claim Status</option>
-                    <option value="HOSPITAL_NETWORK">Hospital Network</option>
-                    <option value="PAYMENT_BILLING">Payment & Billing</option>
-            <form onSubmit={handleCreateSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  User ID <span className="text-rose-400">*</span>
+                <label className="text-slate-700 font-medium block mb-1">
+                  User ID <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="number"
@@ -1166,18 +637,18 @@ const CustomerSupport = () => {
                   value={formData.userId}
                   onChange={handleInputChange}
                   placeholder="e.g. 2 (Any User ID)"
-                  className={`w-full bg-slate-900 text-slate-100 text-sm px-3.5 py-2.5 rounded-xl border ${
-                    formErrors.userId ? 'border-rose-500' : 'border-slate-700/80'
-                  } focus:outline-none focus:border-sky-500`}
+                  className={`w-full bg-slate-50 border ${
+                    formErrors.userId ? 'border-red-400' : 'border-slate-300'
+                  } text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white`}
                 />
                 {formErrors.userId && (
-                  <p className="text-rose-400 text-xs mt-1">{formErrors.userId}</p>
+                  <p className="text-red-600 text-xs mt-1">{formErrors.userId}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Subject / Summary <span className="text-rose-400">*</span>
+                <label className="text-slate-700 font-medium block mb-1">
+                  Subject / Summary <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
@@ -1185,23 +656,23 @@ const CustomerSupport = () => {
                   value={formData.subject}
                   onChange={handleInputChange}
                   placeholder="e.g. Healthcare plan coverage clarification"
-                  className={`w-full bg-slate-900 text-slate-100 text-sm px-3.5 py-2.5 rounded-xl border ${
-                    formErrors.subject ? 'border-rose-500' : 'border-slate-700/80'
-                  } focus:outline-none focus:border-sky-500`}
+                  className={`w-full bg-slate-50 border ${
+                    formErrors.subject ? 'border-red-400' : 'border-slate-300'
+                  } text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white`}
                 />
                 {formErrors.subject && (
-                  <p className="text-rose-400 text-xs mt-1">{formErrors.subject}</p>
+                  <p className="text-red-600 text-xs mt-1">{formErrors.subject}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Priority</label>
+                  <label className="text-slate-700 font-medium block mb-1">Priority</label>
                   <select
                     name="priority"
                     value={formData.priority}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-900 text-slate-100 text-sm px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:outline-none focus:border-sky-500"
+                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
                   >
                     <option value="LOW">LOW</option>
                     <option value="MEDIUM">MEDIUM</option>
@@ -1211,12 +682,12 @@ const CustomerSupport = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Status</label>
+                  <label className="text-slate-700 font-medium block mb-1">Status</label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-900 text-slate-100 text-sm px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:outline-none focus:border-sky-500"
+                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
                   >
                     <option value="OPEN">OPEN</option>
                     <option value="IN_PROGRESS">IN_PROGRESS</option>
@@ -1227,24 +698,8 @@ const CustomerSupport = () => {
               </div>
 
               <div>
-                <label className="text-slate-700 font-medium block mb-1">Inquiry Description *</label>
-                <textarea
-                  rows={4}
-                  required
-                  value={newTicket.description}
-                  onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-                  placeholder="Describe inquiry or issue details..."
-                  className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end gap-3 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-semibold"
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Description / Inquiry Details <span className="text-rose-400">*</span>
+                <label className="text-slate-700 font-medium block mb-1">
+                  Description / Inquiry Details <span className="text-red-600">*</span>
                 </label>
                 <textarea
                   name="description"
@@ -1252,20 +707,20 @@ const CustomerSupport = () => {
                   value={formData.description}
                   onChange={handleInputChange}
                   placeholder="Provide detailed explanation of inquiry or issue..."
-                  className={`w-full bg-slate-900 text-slate-100 text-sm px-3.5 py-2.5 rounded-xl border ${
-                    formErrors.description ? 'border-rose-500' : 'border-slate-700/80'
-                  } focus:outline-none focus:border-sky-500 resize-none`}
+                  className={`w-full bg-slate-50 border ${
+                    formErrors.description ? 'border-red-400' : 'border-slate-300'
+                  } text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white resize-none`}
                 />
                 {formErrors.description && (
-                  <p className="text-rose-400 text-xs mt-1">{formErrors.description}</p>
+                  <p className="text-red-600 text-xs mt-1">{formErrors.description}</p>
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="pt-2 flex justify-end gap-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-semibold"
                 >
                   Cancel
                 </button>
@@ -1275,9 +730,6 @@ const CustomerSupport = () => {
                   className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-2 shadow-xs"
                 >
                   {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                  className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white px-5 py-2 rounded-xl text-sm font-medium shadow-lg shadow-sky-600/20 transition cursor-pointer"
-                >
-                  {submitting && <RefreshCw className="w-4 h-4 animate-spin" />}
                   Submit Ticket
                 </button>
               </div>
@@ -1288,53 +740,51 @@ const CustomerSupport = () => {
 
       {/* EDIT TICKET MODAL (CRUD - Update) */}
       {isEditModalOpen && selectedTicket && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-lg rounded-2xl border border-slate-800 shadow-2xl p-6 relative space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div>
-                <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                  <Edit3 className="w-5 h-5 text-amber-400" /> Edit Ticket {selectedTicket.ticketNumber || `#${selectedTicket.id}`}
-                </h2>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-lg rounded-xl border border-slate-200 p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-amber-600" /> Edit Ticket {selectedTicket.ticketNumber || `#${selectedTicket.id}`}
+              </h3>
               <button 
                 onClick={() => { setIsEditModalOpen(false); setSelectedTicket(null); }}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                className="p-1 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="space-y-4">
+            <form onSubmit={handleEditSubmit} className="space-y-4 text-xs sm:text-sm">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">User ID</label>
+                <label className="text-slate-700 font-medium block mb-1">User ID</label>
                 <input
                   type="number"
                   name="userId"
                   value={formData.userId}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-900 text-slate-100 text-sm px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:outline-none focus:border-sky-500"
+                  className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Subject</label>
+                <label className="text-slate-700 font-medium block mb-1">Subject</label>
                 <input
                   type="text"
                   name="subject"
                   value={formData.subject}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-900 text-slate-100 text-sm px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:outline-none focus:border-sky-500"
+                  className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Priority</label>
+                  <label className="text-slate-700 font-medium block mb-1">Priority</label>
                   <select
                     name="priority"
                     value={formData.priority}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-900 text-slate-100 text-sm px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:outline-none focus:border-sky-500"
+                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
                   >
                     <option value="LOW">LOW</option>
                     <option value="MEDIUM">MEDIUM</option>
@@ -1344,12 +794,12 @@ const CustomerSupport = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Status</label>
+                  <label className="text-slate-700 font-medium block mb-1">Status</label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-900 text-slate-100 text-sm px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:outline-none focus:border-sky-500"
+                    className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white"
                   >
                     <option value="OPEN">OPEN</option>
                     <option value="IN_PROGRESS">IN_PROGRESS</option>
@@ -1360,30 +810,30 @@ const CustomerSupport = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Description</label>
+                <label className="text-slate-700 font-medium block mb-1">Description</label>
                 <textarea
                   name="description"
                   rows="4"
                   value={formData.description}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-900 text-slate-100 text-sm px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:outline-none focus:border-sky-500 resize-none"
+                  className="w-full bg-slate-50 border border-slate-300 text-slate-900 px-3 py-2 rounded-lg focus:outline-none focus:border-emerald-600 focus:bg-white resize-none"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="pt-2 flex justify-end gap-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => { setIsEditModalOpen(false); setSelectedTicket(null); }}
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-5 py-2 rounded-xl text-sm font-medium shadow-lg shadow-amber-600/20 transition cursor-pointer"
+                  className="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-2 shadow-xs"
                 >
-                  {submitting && <RefreshCw className="w-4 h-4 animate-spin" />}
+                  {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   Save Changes
                 </button>
               </div>
@@ -1394,72 +844,70 @@ const CustomerSupport = () => {
 
       {/* VIEW TICKET DETAIL MODAL */}
       {isViewModalOpen && selectedTicket && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-xl rounded-2xl border border-slate-800 shadow-2xl p-6 relative space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-xl rounded-xl border border-slate-200 p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
-                <span className="text-xs font-mono text-sky-400 font-semibold uppercase">Ticket Detail</span>
-                <h2 className="text-xl font-bold text-slate-100 mt-0.5">
+                <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Ticket Detail
+                </span>
+                <h3 className="text-lg font-bold text-slate-900 mt-1">
                   {selectedTicket.ticketNumber || `#${selectedTicket.id}`}
-                </h2>
+                </h3>
               </div>
               <button 
                 onClick={() => { setIsViewModalOpen(false); setSelectedTicket(null); }}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                className="p-1 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4 text-sm text-slate-300">
-              <div className="grid grid-cols-2 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200 text-xs">
                 <div>
-                  <span className="text-xs text-slate-500 block">User ID</span>
-                  <span className="font-semibold text-slate-200">#{selectedTicket.userId}</span>
+                  <span className="text-slate-500 uppercase tracking-wider block font-semibold">User ID</span>
+                  <span className="text-slate-900 font-medium text-sm">#{selectedTicket.userId}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 block">Status</span>
+                  <span className="text-slate-500 uppercase tracking-wider block font-semibold">Status</span>
                   <div className="mt-1">{renderStatusBadge(selectedTicket.status)}</div>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 block">Priority</span>
+                  <span className="text-slate-500 uppercase tracking-wider block font-semibold">Priority</span>
                   <div className="mt-1">{renderPriorityBadge(selectedTicket.priority)}</div>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 block">Created Timestamp</span>
-                  <span className="text-xs text-slate-300">
+                  <span className="text-slate-500 uppercase tracking-wider block font-semibold">Created Timestamp</span>
+                  <span className="text-xs text-slate-700">
                     {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString() : 'Just now'}
                   </span>
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Subject</h3>
-                <p className="text-slate-100 font-medium bg-slate-900/40 p-3 rounded-xl border border-slate-800">
-                  {selectedTicket.subject}
-                </p>
+              <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-1">
+                <span className="text-slate-500 font-semibold block uppercase tracking-wider">Subject</span>
+                <p className="text-slate-900 font-medium text-sm">{selectedTicket.subject}</p>
               </div>
 
-              <div>
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Description</h3>
-                <div className="text-slate-300 whitespace-pre-wrap bg-slate-900/40 p-4 rounded-xl border border-slate-800 min-h-24">
-                  {selectedTicket.description}
-                </div>
+              <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-1">
+                <span className="text-slate-500 font-semibold block uppercase tracking-wider">Description</span>
+                <p className="text-slate-800 whitespace-pre-wrap text-sm min-h-16">{selectedTicket.description}</p>
               </div>
 
               {/* Quick Status Bar */}
               <div className="pt-2">
-                <span className="text-xs text-slate-400 block mb-2 font-medium">Quick Change Status:</span>
+                <span className="text-xs text-slate-500 block mb-2 font-semibold uppercase tracking-wider">Quick Change Status:</span>
                 <div className="flex flex-wrap gap-2">
                   {['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map((st) => (
                     <button
                       key={st}
                       disabled={selectedTicket.status === st}
                       onClick={() => handleQuickStatusChange(selectedTicket, st)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                         selectedTicket.status === st
-                          ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-default'
-                          : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700/80 hover:border-sky-500/50 cursor-pointer'
+                          ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-default'
+                          : 'bg-white hover:bg-emerald-50 text-slate-700 border-slate-200 hover:border-emerald-300 hover:text-emerald-700 cursor-pointer'
                       }`}
                     >
                       Set to {st.replace('_', ' ')}
@@ -1469,10 +917,10 @@ const CustomerSupport = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
               <button
                 onClick={() => { setIsViewModalOpen(false); setSelectedTicket(null); }}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 transition"
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-semibold"
               >
                 Close
               </button>
@@ -1483,32 +931,32 @@ const CustomerSupport = () => {
 
       {/* DELETE CONFIRMATION MODAL (CRUD - Delete) */}
       {ticketToDelete && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-md rounded-2xl border border-rose-500/30 shadow-2xl p-6 relative space-y-4">
-            <div className="flex items-center gap-3 text-rose-400">
-              <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-md rounded-xl border border-red-200 p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-red-50 text-red-700 border border-red-200">
                 <Trash2 className="w-6 h-6" />
               </div>
-              <h2 className="text-lg font-bold text-slate-100">Delete Support Ticket</h2>
+              <h3 className="text-base font-bold text-slate-900">Delete Support Ticket</h3>
             </div>
 
-            <p className="text-sm text-slate-300">
-              Are you sure you want to delete ticket <strong className="text-white">{ticketToDelete.ticketNumber || `#${ticketToDelete.id}`}</strong>? This action will remove the record.
+            <p className="text-sm text-slate-600">
+              Are you sure you want to delete ticket <strong className="text-slate-900">{ticketToDelete.ticketNumber || `#${ticketToDelete.id}`}</strong>? This action will remove the record.
             </p>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="pt-2 flex justify-end gap-3 border-t border-slate-200">
               <button
                 onClick={() => setTicketToDelete(null)}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition"
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-semibold"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteTicket}
                 disabled={submitting}
-                className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-rose-600/20 transition cursor-pointer"
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-2 shadow-xs"
               >
-                {submitting && <RefreshCw className="w-4 h-4 animate-spin" />}
+                {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                 Confirm Delete
               </button>
             </div>

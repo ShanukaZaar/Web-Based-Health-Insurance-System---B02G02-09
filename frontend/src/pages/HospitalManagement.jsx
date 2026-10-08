@@ -18,54 +18,11 @@ import {
   Award
 } from 'lucide-react';
 import hospitalService from '../services/hospitalService';
-
-const fallbackHospitals = [
-  {
-    id: 1,
-    name: 'City General Hospital',
-    registrationNo: 'REG-101',
-    address: '125 Medical Center Blvd, Metropolis',
-    contactNo: '+1-800-555-0111',
-    email: 'contact@citygeneral.org',
-    active: true,
-    networkTier: 'TIER-1 CASHLESS',
-    claimsProcessed: 84,
-    avgSettlementDays: 1.8,
-    rating: 4.8,
-    accreditation: 'JCI Accredited',
-  },
-  {
-    id: 2,
-    name: 'St. Jude Medical Center',
-    registrationNo: 'REG-102',
-    address: '88 Care Way, Gotham',
-    contactNo: '+1-800-555-0222',
-    email: 'info@stjude.org',
-    active: true,
-    networkTier: 'TIER-1 CASHLESS',
-    claimsProcessed: 62,
-    avgSettlementDays: 2.1,
-    rating: 4.9,
-    accreditation: 'NABH Gold',
-  },
-  {
-    id: 3,
-    name: 'Sunrise Community Clinic',
-    registrationNo: 'REG-103',
-    address: '404 Sunset Drive, Smallville',
-    contactNo: '+1-800-555-0333',
-    email: 'desk@sunriseclinic.org',
-    active: false,
-    networkTier: 'REIMBURSEMENT ONLY',
-    claimsProcessed: 18,
-    avgSettlementDays: 4.5,
-    rating: 3.9,
-    accreditation: 'State Certified',
-  },
-];
+import { useToast } from '../context/ToastContext';
 
 const HospitalManagement = () => {
-  const [hospitals, setHospitals] = useState(fallbackHospitals);
+  const { showToast } = useToast();
+  const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -75,6 +32,7 @@ const HospitalManagement = () => {
     name: '',
     registrationNo: '',
     address: '',
+    city: '',
     contactNo: '',
     email: '',
     active: true
@@ -85,19 +43,23 @@ const HospitalManagement = () => {
     setLoading(true);
     try {
       const res = await hospitalService.getAllHospitals();
-      if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (res && res.data && Array.isArray(res.data)) {
         const enriched = res.data.map((h, i) => ({
           ...h,
-          networkTier: h.active ? 'TIER-1 CASHLESS' : 'REIMBURSEMENT ONLY',
-          claimsProcessed: 45 + i * 20,
-          avgSettlementDays: h.active ? 1.9 : 4.2,
-          rating: 4.5 + (i * 0.2),
-          accreditation: 'JCI Accredited',
+          active: h.status === 'ACTIVE',
+          networkTier: h.status === 'ACTIVE' ? 'TIER-1 CASHLESS' : 'REIMBURSEMENT ONLY',
+          claimsProcessed: h.claimsProcessed || 0,
+          avgSettlementDays: h.status === 'ACTIVE' ? 1.9 : 4.2,
+          rating: 4.8,
+          accreditation: 'Empanelled Network Partner',
         }));
         setHospitals(enriched);
+      } else {
+        setHospitals([]);
       }
     } catch (err) {
-      console.warn('API returned fallback hospitals:', err);
+      console.error('Failed to load hospitals from backend:', err);
+      setHospitals([]);
     } finally {
       setLoading(false);
     }
@@ -109,38 +71,69 @@ const HospitalManagement = () => {
 
   const handleRegisterHospital = async (e) => {
     e.preventDefault();
-    if (!newHospital.name || !newHospital.registrationNo) return;
+    if (!newHospital.name) return;
 
     setSubmitting(true);
     try {
       const payload = {
         name: newHospital.name,
-        registrationNo: newHospital.registrationNo,
-        address: newHospital.address,
-        contactNo: newHospital.contactNo,
-        email: newHospital.email,
-        active: newHospital.active
+        address: newHospital.address || 'Standard Medical Center',
+        city: newHospital.city || 'Central City',
+        contactNumber: newHospital.contactNo || '+1-800-555-0100',
+        email: newHospital.email || 'contact@hospital.com',
+        status: newHospital.active ? 'ACTIVE' : 'INACTIVE'
       };
 
-      await hospitalService.registerHospital(payload).catch(() => null);
-
-      const created = {
-        id: hospitals.length + 1,
-        ...payload,
-        networkTier: payload.active ? 'TIER-1 CASHLESS' : 'REIMBURSEMENT ONLY',
-        claimsProcessed: 0,
-        avgSettlementDays: 2.0,
-        rating: 5.0,
-        accreditation: 'Accreditation Pending',
-      };
-
-      setHospitals([created, ...hospitals]);
+      await hospitalService.registerHospital(payload);
       setShowRegisterModal(false);
-      setNewHospital({ name: '', registrationNo: '', address: '', contactNo: '', email: '', active: true });
+      setNewHospital({ name: '', registrationNo: '', address: '', city: '', contactNo: '', email: '', active: true });
+      fetchHospitals();
+      showToast(
+        `Hospital "${payload.name}" empanelled successfully into healthcare network.`,
+        'success',
+        'Hospital Empanelled'
+      );
     } catch (err) {
-      alert('Failed to register hospital.');
+      showToast(
+        'Failed to register hospital: ' + (err.response?.data?.message || err.message),
+        'error',
+        'Registration Failed'
+      );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleToggleHospitalStatus = async (hosp) => {
+    const isCurrentlyActive = hosp.active;
+    const actionName = isCurrentlyActive ? 'suspend' : 'reactivate';
+    if (!window.confirm(`Are you sure you want to ${actionName} empanelment for "${hosp.name}"?`)) {
+      return;
+    }
+
+    try {
+      if (isCurrentlyActive) {
+        await hospitalService.suspendHospital(hosp.id);
+        showToast(
+          `Hospital "${hosp.name}" empanelment has been suspended.`,
+          'warning',
+          'Empanelment Suspended'
+        );
+      } else {
+        await hospitalService.reactivateHospital(hosp.id);
+        showToast(
+          `Hospital "${hosp.name}" empanelment reactivated successfully for cashless services.`,
+          'success',
+          'Empanelment Reactivated'
+        );
+      }
+      fetchHospitals();
+    } catch (err) {
+      showToast(
+        'Failed to update hospital status: ' + (err.response?.data?.message || err.message),
+        'error',
+        'Status Update Error'
+      );
     }
   };
 
@@ -166,7 +159,6 @@ const HospitalManagement = () => {
             <span className="text-xs font-bold text-blue-800 uppercase tracking-widest bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
               Healthcare Providers
             </span>
-            <span className="text-xs text-slate-500">• MLBB2G209</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5 mt-2">
             <Building2 className="w-7 h-7 text-blue-600" />
@@ -232,8 +224,22 @@ const HospitalManagement = () => {
       </div>
 
       {/* Hospital Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredHospitals.map((hosp) => (
+      {loading ? (
+        <div className="bg-white p-12 rounded-xl border border-slate-200 text-center shadow-xs">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-emerald-600" />
+          <p className="text-slate-600 text-sm">Loading empanelled hospitals from database...</p>
+        </div>
+      ) : filteredHospitals.length === 0 ? (
+        <div className="bg-white p-12 rounded-xl border border-slate-200 text-center shadow-xs space-y-3">
+          <Building2 className="w-10 h-10 mx-auto text-slate-300" />
+          <h3 className="text-base font-bold text-slate-800">No Hospitals Found</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            {search ? 'No hospitals match your search keyword.' : 'There are currently no network hospitals registered in the database.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredHospitals.map((hosp) => (
           <div
             key={hosp.id}
             className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4 hover:border-slate-300 transition-all"
@@ -247,13 +253,26 @@ const HospitalManagement = () => {
                   {hosp.name}
                 </h3>
               </div>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border shrink-0 ${
-                hosp.active
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : 'bg-red-50 text-red-800 border-red-200'
-              }`}>
-                {hosp.active ? 'ACTIVE' : 'INACTIVE'}
-              </span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                  hosp.active
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-red-50 text-red-800 border-red-200'
+                }`}>
+                  {hosp.active ? 'ACTIVE' : 'INACTIVE'}
+                </span>
+                <button
+                  onClick={() => handleToggleHospitalStatus(hosp)}
+                  className={`text-[11px] font-semibold px-2 py-0.5 rounded border transition-colors ${
+                    hosp.active
+                      ? 'text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200'
+                      : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+                  }`}
+                  title={hosp.active ? 'Suspend empanelment' : 'Reactivate empanelment'}
+                >
+                  {hosp.active ? 'Suspend' : 'Reactivate'}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2 text-xs text-slate-600">
@@ -292,6 +311,7 @@ const HospitalManagement = () => {
           </div>
         ))}
       </div>
+      )}
 
       {/* REGISTER HOSPITAL MODAL */}
       {showRegisterModal && (

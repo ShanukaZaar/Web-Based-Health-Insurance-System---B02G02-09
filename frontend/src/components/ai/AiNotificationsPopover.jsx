@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bell, 
   Sparkles, 
@@ -11,56 +11,82 @@ import {
   Clock,
   X
 } from 'lucide-react';
-
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 1,
-    title: 'High-Risk Claim Flagged',
-    desc: 'Claim #CLM-8004 flagged for elective treatment mismatch against policy clauses.',
-    type: 'risk',
-    severity: 'high',
-    time: '5m ago',
-    unread: true,
-    icon: AlertTriangle,
-    badgeColor: 'text-red-700 bg-red-50 border-red-200',
-  },
-  {
-    id: 2,
-    title: 'Missing Document Alert',
-    desc: 'Policy holder John Doe submitted claim #CLM-8002 without signed attending physician note.',
-    type: 'document',
-    severity: 'medium',
-    time: '24m ago',
-    unread: true,
-    icon: FileWarning,
-    badgeColor: 'text-amber-800 bg-amber-50 border-amber-200',
-  },
-  {
-    id: 3,
-    title: 'Policy Renewal Approaching',
-    desc: 'POL-1002 (Family Care Plus) is within the 30-day auto-renewal notification window.',
-    type: 'renewal',
-    severity: 'info',
-    time: '1h ago',
-    unread: true,
-    icon: CalendarClock,
-    badgeColor: 'text-blue-700 bg-blue-50 border-blue-200',
-  },
-  {
-    id: 4,
-    title: 'Hospital Volume Notice',
-    desc: '18% higher weekend admissions recorded at City General Hospital.',
-    type: 'anomaly',
-    severity: 'info',
-    time: '3h ago',
-    unread: false,
-    icon: Activity,
-    badgeColor: 'text-slate-700 bg-slate-50 border-slate-200',
-  },
-];
+import adminService from '../../services/adminService';
+import claimService from '../../services/claimService';
 
 export const AiNotificationsPopover = ({ isOpen, onClose, onSelectNotification }) => {
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const fetchNotifications = async () => {
+      setLoading(true);
+      try {
+        const [auditRes, claimsRes] = await Promise.all([
+          adminService.getAuditLogs().catch(() => null),
+          claimService.getAllClaims().catch(() => null),
+        ]);
+
+        const notifs = [];
+
+        if (claimsRes && claimsRes.data && Array.isArray(claimsRes.data)) {
+          claimsRes.data.forEach((c) => {
+            if (c.status === 'REJECTED') {
+              notifs.push({
+                id: `claim-rej-${c.id}`,
+                title: 'High-Risk Claim Flagged',
+                desc: `Claim #${c.claimNumber || c.id} rejected: ${c.rejectionReason || 'Elective treatment not authorized.'}`,
+                type: 'risk',
+                severity: 'high',
+                time: c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent',
+                unread: true,
+                icon: AlertTriangle,
+                badgeColor: 'text-red-700 bg-red-50 border-red-200',
+              });
+            } else if (c.status === 'PENDING' || c.status === 'SUBMITTED') {
+              notifs.push({
+                id: `claim-pend-${c.id}`,
+                title: 'Claim Review Pending',
+                desc: `Claim #${c.claimNumber || c.id} for $${Number(c.claimAmount || 0).toLocaleString()} awaiting assessment.`,
+                type: 'document',
+                severity: 'medium',
+                time: c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent',
+                unread: true,
+                icon: FileWarning,
+                badgeColor: 'text-amber-800 bg-amber-50 border-amber-200',
+              });
+            }
+          });
+        }
+
+        if (auditRes && auditRes.data && Array.isArray(auditRes.data)) {
+          auditRes.data.slice(0, 5).forEach((log) => {
+            notifs.push({
+              id: `audit-${log.id}`,
+              title: `${log.action} Notice`,
+              desc: log.description || `Action performed by @${log.username}`,
+              type: 'activity',
+              severity: 'info',
+              time: log.timestamp ? new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent',
+              unread: false,
+              icon: Activity,
+              badgeColor: 'text-slate-700 bg-slate-50 border-slate-200',
+            });
+          });
+        }
+
+        setNotifications(notifs);
+      } catch (err) {
+        console.warn('Failed to fetch live notifications:', err);
+        setNotifications([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

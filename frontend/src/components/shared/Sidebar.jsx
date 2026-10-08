@@ -7,15 +7,17 @@ import {
   CreditCard, 
   Building2, 
   LifeBuoy, 
-  ShieldAlert,
+  ShieldAlert, 
   Sparkles,
-  Settings,
-  Activity,
-  BrainCircuit,
-  X
+  Settings, 
+  BrainCircuit, 
+  X 
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
+  const { isAdmin } = useAuth();
+
   const mainNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/policies', label: 'Policies', icon: ShieldCheck },
@@ -25,11 +27,17 @@ const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
     { path: '/support', label: 'Support', icon: LifeBuoy },
   ];
 
-  const adminNavItems = [
-    { path: '/admin', label: 'Reports & Admin', icon: ShieldAlert },
-    { path: '/ai-insights', label: 'AI Insights', icon: BrainCircuit, isAi: true },
-    { path: '/settings', label: 'Settings', icon: Settings },
-  ];
+  // Only ADMIN users have access to the Administration section & reports
+  const adminNavItems = isAdmin
+    ? [
+        { path: '/admin', label: 'Reports & Admin', icon: ShieldAlert },
+        { path: '/ai-insights', label: 'AI Insights', icon: BrainCircuit, isAi: true },
+        { path: '/settings', label: 'Settings', icon: Settings },
+      ]
+    : [
+        { path: '/ai-insights', label: 'AI Insights', icon: BrainCircuit, isAi: true },
+        { path: '/settings', label: 'Settings', icon: Settings },
+      ];
 
   const sidebarContent = (
     <div className="flex flex-col justify-between h-full p-4 bg-white">
@@ -65,10 +73,10 @@ const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
           </nav>
         </div>
 
-        {/* AI & Admin Navigation */}
+        {/* AI & Admin Navigation (Only reports & admin shown for ADMIN) */}
         <div>
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 block">
-            Administration
+            {isAdmin ? 'Administration' : 'System Tools'}
           </span>
           <nav className="mt-2 space-y-1">
             {adminNavItems.map((item) => {
@@ -102,23 +110,10 @@ const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
         </div>
       </div>
 
-      {/* Sidebar Footer Status Widget */}
-      <div className="space-y-3 pt-4 border-t border-slate-200">
-        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-2 h-2 rounded-full bg-emerald-600" />
-            <div>
-              <span className="text-xs font-bold text-slate-800 block">System Status</span>
-              <span className="text-[10px] text-slate-500">API Connected :8080</span>
-            </div>
-          </div>
-          <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded">
-            Online
-          </span>
-        </div>
-
+      {/* Sidebar Footer */}
+      <div className="pt-4 border-t border-slate-200">
         <div className="text-[11px] text-slate-400 text-center">
-          Health Insurance System • MLBB2G209
+          Health Insurance System
         </div>
       </div>
     </div>

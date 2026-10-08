@@ -31,34 +31,102 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import claimService from '../services/claimService';
 import AiInsuranceAssistantModal from '../components/ai/AiInsuranceAssistantModal';
-
-const aiRiskDistribution = [
-  { name: 'Low Risk (< 25%)', value: 78, color: '#059669' },
-  { name: 'Moderate Risk (25-60%)', value: 16, color: '#d97706' },
-  { name: 'High Risk (> 60%)', value: 6, color: '#dc2626' },
-];
-
-const anomalyTrends = [
-  { week: 'W1', normal: 42, flagged: 2 },
-  { week: 'W2', normal: 48, flagged: 3 },
-  { week: 'W3', normal: 54, flagged: 1 },
-  { week: 'W4', normal: 61, flagged: 4 },
-  { week: 'W5', normal: 68, flagged: 2 },
-];
+import { useToast } from '../context/ToastContext';
 
 const AiInsightsPage = () => {
+  const { showToast } = useToast();
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState(null);
   const [modelRunning, setModelRunning] = useState(false);
+  const [claims, setClaims] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const runReaudit = () => {
+  const fetchClaims = async () => {
+    setLoading(true);
+    try {
+      const res = await claimService.getAllClaims();
+      if (res && res.data && Array.isArray(res.data)) {
+        setClaims(res.data);
+      } else {
+        setClaims([]);
+      }
+    } catch (err) {
+      console.warn('Failed to load claims for AI insights:', err);
+      setClaims([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchClaims();
+  }, []);
+
+  const aiRiskDistribution = React.useMemo(() => {
+    if (!claims.length) {
+      return [
+        { name: 'Low Risk (< 25%)', value: 100, color: '#059669' },
+        { name: 'Moderate Risk (25-60%)', value: 0, color: '#d97706' },
+        { name: 'High Risk (> 60%)', value: 0, color: '#dc2626' },
+      ];
+    }
+    let low = 0;
+    let mod = 0;
+    let high = 0;
+    claims.forEach((c) => {
+      const st = (c.status || '').toUpperCase();
+      const score = c.riskScore !== undefined ? c.riskScore : (st === 'REJECTED' ? 75 : 15);
+      if (score > 60 || st === 'REJECTED') {
+        high += 1;
+      } else if (score >= 25 || st === 'PENDING') {
+        mod += 1;
+      } else {
+        low += 1;
+      }
+    });
+    const total = claims.length || 1;
+    return [
+      { name: 'Low Risk (< 25%)', value: Math.round((low / total) * 100), color: '#059669' },
+      { name: 'Moderate Risk (25-60%)', value: Math.round((mod / total) * 100), color: '#d97706' },
+      { name: 'High Risk (> 60%)', value: Math.round((high / total) * 100), color: '#dc2626' },
+    ];
+  }, [claims]);
+
+  const anomalyTrends = React.useMemo(() => {
+    if (!claims.length) {
+      return [{ week: 'W1', normal: 0, flagged: 0 }];
+    }
+    const grouped = {};
+    claims.forEach((c, idx) => {
+      const wk = `W${Math.floor(idx / 5) + 1}`;
+      if (!grouped[wk]) grouped[wk] = { week: wk, normal: 0, flagged: 0 };
+      const st = (c.status || '').toUpperCase();
+      if (st === 'REJECTED' || (c.riskScore && c.riskScore > 60)) {
+        grouped[wk].flagged += 1;
+      } else {
+        grouped[wk].normal += 1;
+      }
+    });
+    return Object.values(grouped);
+  }, [claims]);
+
+  const runReaudit = async () => {
     setModelRunning(true);
+    await fetchClaims();
     setTimeout(() => {
       setModelRunning(false);
-      alert('AI Neural Engine completed re-indexing across all 4 active policies and 160+ historical claims. Portfolio health score: 96.4/100.');
-    }, 1200);
+      showToast(
+        `AI Neural Engine completed re-indexing across ${claims.length} claims in live database. Portfolio integrity verified.`,
+        'success',
+        'Audit Verification Complete'
+      );
+    }, 800);
   };
+
+  const totalFlagged = claims.filter((c) => (c.status || '').toUpperCase() === 'REJECTED' || (c.riskScore && c.riskScore > 60)).length;
+  const totalVolume = claims.reduce((sum, c) => sum + (Number(c.claimAmount) || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -69,7 +137,6 @@ const AiInsightsPage = () => {
             <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wider bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
               AI Intelligence & Actuarial Center
             </span>
-            <span className="text-xs text-slate-500">• MLBB2G209</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5 mt-2">
             <BrainCircuit className="w-7 h-7 text-emerald-600" />
@@ -103,26 +170,30 @@ const AiInsightsPage = () => {
       {/* AI Performance Scorecard */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block">Neural Model Accuracy</span>
-          <div className="text-3xl font-extrabold text-emerald-700 mt-2">99.1%</div>
-          <span className="text-xs text-slate-500 mt-1 block">F1-score across 1,200 audits</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block">Total Claims Audited</span>
+          <div className="text-3xl font-extrabold text-emerald-700 mt-2">{loading ? '...' : claims.length}</div>
+          <span className="text-xs text-slate-500 mt-1 block">Live claims from database</span>
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block">Avg Auto-Approval Speed</span>
-          <div className="text-3xl font-extrabold text-blue-700 mt-2">1.4 Sec</div>
-          <span className="text-xs text-slate-500 mt-1 block">Instant OCR document match</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block">Flagged Risk Anomalies</span>
+          <div className="text-3xl font-extrabold text-blue-700 mt-2">{loading ? '...' : totalFlagged}</div>
+          <span className="text-xs text-slate-500 mt-1 block">Flagged for audit review</span>
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block">Fraud Prevention Ratio</span>
-          <div className="text-3xl font-extrabold text-emerald-700 mt-2">$34,800</div>
-          <span className="text-xs text-emerald-700 mt-1 block">Prevented irregular payouts</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block">Audited Portfolio Volume</span>
+          <div className="text-3xl font-extrabold text-emerald-700 mt-2">
+            ${totalVolume.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <span className="text-xs text-emerald-700 mt-1 block">Total claims sum</span>
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block">Portfolio Health Index</span>
-          <div className="text-3xl font-extrabold text-slate-900 mt-2">96.4 / 100</div>
+          <div className="text-3xl font-extrabold text-slate-900 mt-2">
+            {claims.length ? `${Math.round(((claims.length - totalFlagged) / claims.length) * 100)}%` : '100%'}
+          </div>
           <span className="text-xs text-slate-500 mt-1 block">Optimal actuarial balance</span>
         </div>
       </div>
@@ -137,7 +208,7 @@ const AiInsightsPage = () => {
               <p className="text-xs text-slate-500">Claims classified by neural risk scoring algorithm</p>
             </div>
             <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              78% Low Risk
+              {aiRiskDistribution[0]?.value || 0}% Low Risk
             </span>
           </div>
 

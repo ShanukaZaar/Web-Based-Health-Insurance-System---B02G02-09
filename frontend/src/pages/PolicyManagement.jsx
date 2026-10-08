@@ -17,67 +17,15 @@ import {
   X,
   Clock,
   TrendingUp,
-  FileText
+  FileText,
+  Trash2
 } from 'lucide-react';
 import policyService from '../services/policyService';
-
-const fallbackPolicies = [
-  {
-    id: 1,
-    policyNumber: 'POL-1001',
-    title: 'Comprehensive Health Shield',
-    description: 'Full individual healthcare coverage including inpatient, intensive care, and diagnostic scans.',
-    coverageAmount: 500000.0,
-    premiumAmount: 450.0,
-    policyType: 'INDIVIDUAL',
-    status: 'ACTIVE',
-    expiryDate: '2027-08-15',
-    claimsUsed: 12950.0,
-    enrolledMembers: 142,
-  },
-  {
-    id: 2,
-    policyNumber: 'POL-1002',
-    title: 'Family Care Plus',
-    description: 'Premium healthcare umbrella covering primary insured, spouse, and up to 4 dependent children.',
-    coverageAmount: 1000000.0,
-    premiumAmount: 850.0,
-    policyType: 'FAMILY',
-    status: 'ACTIVE',
-    expiryDate: '2027-11-30',
-    claimsUsed: 24800.0,
-    enrolledMembers: 98,
-  },
-  {
-    id: 3,
-    policyNumber: 'POL-1003',
-    title: 'Senior Citizen Care Support',
-    description: 'Specialized geriatric medical plan with low deductible for cardiac, ophthalmology, and chronic care.',
-    coverageAmount: 300000.0,
-    premiumAmount: 600.0,
-    policyType: 'SENIOR',
-    status: 'ACTIVE',
-    expiryDate: '2027-05-20',
-    claimsUsed: 3200.0,
-    enrolledMembers: 64,
-  },
-  {
-    id: 4,
-    policyNumber: 'POL-1004',
-    title: 'Basic Emergency Cover',
-    description: 'Accidental injury, trauma center, and emergency ambulance hospitalization protection.',
-    coverageAmount: 100000.0,
-    premiumAmount: 200.0,
-    policyType: 'BASIC',
-    status: 'INACTIVE',
-    expiryDate: '2026-12-31',
-    claimsUsed: 0.0,
-    enrolledMembers: 19,
-  },
-];
+import { useToast } from '../context/ToastContext';
 
 const PolicyManagement = () => {
-  const [policies, setPolicies] = useState(fallbackPolicies);
+  const { showToast } = useToast();
+  const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
@@ -98,24 +46,14 @@ const PolicyManagement = () => {
     setLoading(true);
     try {
       const res = await policyService.getAllPolicies();
-      if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
-        const enriched = res.data.map((p, i) => ({
-          ...p,
-          policyNumber: p.policyNumber || `POL-100${p.id || i + 1}`,
-          title: p.title || 'Healthcare Policy Plan',
-          description: p.description || 'Comprehensive medical insurance plan coverage.',
-          coverageAmount: Number(p.coverageAmount) || 500000,
-          premiumAmount: Number(p.premiumAmount) || 450,
-          policyType: p.policyType || 'INDIVIDUAL',
-          status: p.status || 'ACTIVE',
-          expiryDate: '2027-08-15',
-          claimsUsed: i === 0 ? 12950 : i === 1 ? 24800 : 3200,
-          enrolledMembers: 80 + i * 25,
-        }));
-        setPolicies(enriched);
+      if (res && res.data && Array.isArray(res.data)) {
+        setPolicies(res.data);
+      } else {
+        setPolicies([]);
       }
     } catch (err) {
-      console.warn('API returned fallback policies:', err);
+      console.error('Failed to load policies from backend:', err);
+      setPolicies([]);
     } finally {
       setLoading(false);
     }
@@ -132,6 +70,7 @@ const PolicyManagement = () => {
     setSubmitting(true);
     try {
       const payload = {
+        policyNumber: `POL-${Math.floor(1000 + Math.random() * 9000)}`,
         title: newPolicy.title,
         description: newPolicy.description,
         coverageAmount: Number(newPolicy.coverageAmount),
@@ -140,24 +79,44 @@ const PolicyManagement = () => {
         status: newPolicy.status
       };
 
-      await policyService.createPolicy(payload).catch(() => null);
-
-      const created = {
-        id: policies.length + 1,
-        policyNumber: `POL-100${policies.length + 1}`,
-        ...payload,
-        expiryDate: '2027-12-31',
-        claimsUsed: 0.0,
-        enrolledMembers: 1,
-      };
-
-      setPolicies([created, ...policies]);
+      await policyService.createPolicy(payload);
       setShowCreateModal(false);
       setNewPolicy({ title: '', description: '', coverageAmount: '', premiumAmount: '', policyType: 'INDIVIDUAL', status: 'ACTIVE' });
+      fetchPolicies();
+      showToast(
+        `Policy "${payload.title}" (${payload.policyNumber}) created successfully with ${formatCurrency(payload.coverageAmount)} coverage limit.`,
+        'success',
+        'Policy Created'
+      );
     } catch (err) {
-      alert('Failed to create policy.');
+      showToast(
+        'Failed to create policy: ' + (err.response?.data?.message || err.message),
+        'error',
+        'Policy Creation Error'
+      );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeletePolicy = async (policy) => {
+    if (!window.confirm(`Are you sure you want to cancel and deactivate policy "${policy.title}" (${policy.policyNumber || '#' + policy.id})?`)) {
+      return;
+    }
+    try {
+      await policyService.deletePolicy(policy.id);
+      fetchPolicies();
+      showToast(
+        `Policy "${policy.title}" (${policy.policyNumber || '#' + policy.id}) cancelled and deactivated successfully.`,
+        'info',
+        'Policy Cancelled'
+      );
+    } catch (err) {
+      showToast(
+        'Failed to cancel policy: ' + (err.response?.data?.message || err.message),
+        'error',
+        'Policy Cancellation Error'
+      );
     }
   };
 
@@ -191,7 +150,6 @@ const PolicyManagement = () => {
             <span className="text-xs font-bold text-emerald-800 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
               Policy Underwriting & Portfolio
             </span>
-            <span className="text-xs text-slate-500">• MLBB2G209</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5 mt-2">
             <ShieldCheck className="w-7 h-7 text-emerald-600" />
@@ -322,8 +280,24 @@ const PolicyManagement = () => {
       </div>
 
       {/* Policy Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredPolicies.map((pol) => {
+      {loading ? (
+        <div className="bg-white p-12 rounded-xl border border-slate-200 text-center shadow-xs">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-emerald-600" />
+          <p className="text-slate-600 text-sm">Loading policies from database...</p>
+        </div>
+      ) : filteredPolicies.length === 0 ? (
+        <div className="bg-white p-12 rounded-xl border border-slate-200 text-center shadow-xs space-y-3">
+          <ShieldCheck className="w-10 h-10 mx-auto text-slate-300" />
+          <h3 className="text-base font-bold text-slate-800">No Policies Found</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            {search || typeFilter !== 'ALL'
+              ? 'No policies match your search filters.'
+              : 'There are currently no insurance policies registered in the database.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredPolicies.map((pol) => {
           const covAmt = Number(pol.coverageAmount) || 0;
           const usedAmt = Number(pol.claimsUsed) || 0;
           const remaining = Math.max(0, covAmt - usedAmt);
@@ -349,13 +323,22 @@ const PolicyManagement = () => {
                   </h3>
                 </div>
 
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border shrink-0 ${
-                  pol.status === 'ACTIVE'
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    : 'bg-slate-100 text-slate-600 border-slate-200'
-                }`}>
-                  {pol.status || 'ACTIVE'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border shrink-0 ${
+                    pol.status === 'ACTIVE'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      : 'bg-slate-100 text-slate-600 border-slate-200'
+                  }`}>
+                    {pol.status || 'ACTIVE'}
+                  </span>
+                  <button
+                    onClick={() => handleDeletePolicy(pol)}
+                    className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
+                    title="Cancel and deactivate policy"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
               <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
@@ -407,6 +390,7 @@ const PolicyManagement = () => {
           );
         })}
       </div>
+      )}
 
       {/* CREATE POLICY MODAL */}
       {showCreateModal && (
