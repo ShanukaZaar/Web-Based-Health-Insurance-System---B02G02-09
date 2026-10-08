@@ -1,6 +1,5 @@
 package com.mlbb2g209.healthinsurance.support;
 
-import com.mlbb2g209.healthinsurance.common.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -98,8 +97,6 @@ public class SupportController {
             @PathVariable Long id) {
 
         supportService.deleteTicket(id);
-
         return ResponseEntity.noContent().build();
     }
-
 }

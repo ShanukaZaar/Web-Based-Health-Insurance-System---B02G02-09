@@ -32,6 +32,7 @@ const HospitalManagement = () => {
     name: '',
     registrationNo: '',
     address: '',
+    city: '',
     contactNo: '',
     email: '',
     active: true
@@ -45,9 +46,10 @@ const HospitalManagement = () => {
       if (res && res.data && Array.isArray(res.data)) {
         const enriched = res.data.map((h, i) => ({
           ...h,
-          networkTier: h.active ? 'TIER-1 CASHLESS' : 'REIMBURSEMENT ONLY',
+          active: h.status === 'ACTIVE',
+          networkTier: h.status === 'ACTIVE' ? 'TIER-1 CASHLESS' : 'REIMBURSEMENT ONLY',
           claimsProcessed: h.claimsProcessed || 0,
-          avgSettlementDays: h.active ? 1.9 : 4.2,
+          avgSettlementDays: h.status === 'ACTIVE' ? 1.9 : 4.2,
           rating: 4.8,
           accreditation: 'Empanelled Network Partner',
         }));
@@ -69,25 +71,25 @@ const HospitalManagement = () => {
 
   const handleRegisterHospital = async (e) => {
     e.preventDefault();
-    if (!newHospital.name || !newHospital.registrationNo) return;
+    if (!newHospital.name) return;
 
     setSubmitting(true);
     try {
       const payload = {
         name: newHospital.name,
-        registrationNo: newHospital.registrationNo,
-        address: newHospital.address,
-        contactNo: newHospital.contactNo,
-        email: newHospital.email,
-        active: newHospital.active
+        address: newHospital.address || 'Standard Medical Center',
+        city: newHospital.city || 'Central City',
+        contactNumber: newHospital.contactNo || '+1-800-555-0100',
+        email: newHospital.email || 'contact@hospital.com',
+        status: newHospital.active ? 'ACTIVE' : 'INACTIVE'
       };
 
       await hospitalService.registerHospital(payload);
       setShowRegisterModal(false);
-      setNewHospital({ name: '', registrationNo: '', address: '', contactNo: '', email: '', active: true });
+      setNewHospital({ name: '', registrationNo: '', address: '', city: '', contactNo: '', email: '', active: true });
       fetchHospitals();
       showToast(
-        `Hospital "${payload.name}" (${payload.registrationNo}) empanelled successfully into healthcare network.`,
+        `Hospital "${payload.name}" empanelled successfully into healthcare network.`,
         'success',
         'Hospital Empanelled'
       );

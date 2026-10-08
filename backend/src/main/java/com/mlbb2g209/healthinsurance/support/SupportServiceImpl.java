@@ -102,12 +102,10 @@ public class SupportServiceImpl implements SupportService {
     @Transactional(readOnly = true)
     public SupportDTO getTicketByNumber(String ticketNumber) {
 
-        SupportTicket ticket = supportRepository
-                .findByTicketNumber(ticketNumber)
+        SupportTicket ticket = supportRepository.findByTicketNumber(ticketNumber)
                 .orElseThrow(() ->
                         new RuntimeException(
-                                "Support ticket not found with ticket number: "
-                                        + ticketNumber));
+                                "Support ticket not found with number: " + ticketNumber));
 
         return convertToDTO(ticket);
     }
@@ -116,7 +114,7 @@ public class SupportServiceImpl implements SupportService {
     @Transactional(readOnly = true)
     public List<SupportDTO> getTicketsByUser(Long userId) {
 
-        return supportRepository.findByUser_Id(userId)
+        return supportRepository.findByUserId(userId)
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -133,6 +131,7 @@ public class SupportServiceImpl implements SupportService {
     }
 
     @Override
+    @Transactional
     public SupportDTO updateTicket(Long id, SupportDTO supportDTO) {
 
         SupportTicket ticket = supportRepository.findById(id)
@@ -156,28 +155,13 @@ public class SupportServiceImpl implements SupportService {
             ticket.setPriority(supportDTO.getPriority());
         }
 
-        if (supportDTO.getUserId() != null &&
-                (ticket.getUser() == null || !supportDTO.getUserId().equals(ticket.getUser().getId()))) {
-
-            User user = userRepository.findById(supportDTO.getUserId())
-                    .orElseThrow(() ->
-                            new RuntimeException(
-                                    "User not found with ID: "
-                                            + supportDTO.getUserId()));
-
-            ticket.setUser(user);
-        }
-
-//        if (supportDTO.getUserId() != null) {
-//            ticket.setUserId(supportDTO.getUserId());
-//        }
-
         SupportTicket updatedTicket = supportRepository.save(ticket);
 
         return convertToDTO(updatedTicket);
     }
 
     @Override
+    @Transactional
     public void deleteTicket(Long id) {
 
         SupportTicket ticket = supportRepository.findById(id)
@@ -189,19 +173,9 @@ public class SupportServiceImpl implements SupportService {
     }
 
     private String generateTicketNumber() {
-
-        String ticketNumber;
-
-        do {
-            ticketNumber = "TKT-" +
-                    UUID.randomUUID()
-                            .toString()
-                            .substring(0, 8)
-                            .toUpperCase();
-
-        } while (supportRepository.existsByTicketNumber(ticketNumber));
-
-        return ticketNumber;
+        return "TKT-" + UUID.randomUUID().toString()
+                .substring(0, 8)
+                .toUpperCase();
     }
 
     private SupportDTO convertToDTO(SupportTicket ticket) {
@@ -210,11 +184,11 @@ public class SupportServiceImpl implements SupportService {
 
         dto.setId(ticket.getId());
         dto.setTicketNumber(ticket.getTicketNumber());
-
-        if (ticket.getUser() != null) {
-            dto.setUserId(ticket.getUser().getId());
-        }
-
+        dto.setUserId(
+                ticket.getUser() != null
+                        ? ticket.getUser().getId()
+                        : null
+        );
         dto.setSubject(ticket.getSubject());
         dto.setDescription(ticket.getDescription());
         dto.setStatus(ticket.getStatus());
@@ -232,5 +206,4 @@ public class SupportServiceImpl implements SupportService {
 
         return dto;
     }
-
 }

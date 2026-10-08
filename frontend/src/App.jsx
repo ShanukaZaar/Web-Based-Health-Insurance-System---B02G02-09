@@ -3,30 +3,37 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/shared/Layout';
 import AppRoutes from './routes/AppRoutes';
 import Home from './pages/Home';
+import Login from './pages/Login';
 import HomeButton from './components/home/HomeButton';
-
 import { ToastProvider } from './context/ToastContext';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
     <BrowserRouter>
-      <ToastProvider>
-        <Routes>
-          {/* Public landing page: no sidebar/top bar */}
-          <Route path="/" element={<Home />} />
+      <AuthProvider>
+        <ToastProvider>
+          <Routes>
+            {/* Public landing pages: no portal sidebar/top bar */}
+            <Route path="/" element={<Home />} />
+            <Route path="/home" element={<Home />} />
 
-          {/* Everything else keeps the existing layout and routes */}
-          <Route
-            path="/*"
-            element={
-              <Layout>
-                <HomeButton />
-                <AppRoutes />
-              </Layout>
-            }
-          />
-        </Routes>
-      </ToastProvider>
+            {/* Standalone Login & Register Page */}
+            <Route path="/login" element={<Login />} />
+
+            {/* Portal application with layout and routes */}
+            <Route
+              path="/*"
+              element={
+                <Layout>
+                  <HomeButton />
+                  <AppRoutes />
+                </Layout>
+              }
+            />
+          </Routes>
+        </ToastProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

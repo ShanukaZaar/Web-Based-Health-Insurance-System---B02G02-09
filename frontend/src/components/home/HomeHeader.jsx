@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Icon from "./Icon";
+import { useAuth } from "../../context/AuthContext";
 
 const NAV = [
     { label: "Home", href: "#top" },
@@ -35,6 +36,11 @@ export function Logo() {
 
 export default function HomeHeader() {
     const [open, setOpen] = useState(false);
+    const navigate = useNavigate();
+    const { isAuthenticated, isAdmin, user, logout } = useAuth();
+
+    const portalDestination = !isAuthenticated ? "/login" : (isAdmin ? "/admin" : "/dashboard");
+    const portalButtonText = !isAuthenticated ? "Sign In" : (isAdmin ? "Admin Dashboard" : "User Dashboard");
 
     return (
         <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -65,20 +71,34 @@ export default function HomeHeader() {
                         <Icon name="sparkles" className="h-4 w-4" />
                         AI Assistant
                     </button>
-                    <button
-                        type="button"
-                        aria-label="Notifications"
-                        className="relative rounded-lg border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-50"
-                    >
-                        <Icon name="bell" />
-                        <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
-                    </button>
-                    <Link
-                        to="/dashboard"
-                        className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                    >
-                        Open Portal
-                    </Link>
+
+                    {isAuthenticated ? (
+                        <div className="flex items-center gap-2">
+                            <Link
+                                to={portalDestination}
+                                className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                            >
+                                {portalButtonText}
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    logout();
+                                    navigate("/login");
+                                }}
+                                className="rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+                            >
+                                Sign Out
+                            </button>
+                        </div>
+                    ) : (
+                        <Link
+                            to="/login"
+                            className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                        >
+                            Sign In / Open Portal
+                        </Link>
+                    )}
                 </div>
 
                 {/* Mobile toggle */}
@@ -107,11 +127,25 @@ export default function HomeHeader() {
                         </a>
                     ))}
                     <Link
-                        to="/dashboard"
+                        to={portalDestination}
+                        onClick={() => setOpen(false)}
                         className="mt-2 block rounded-lg bg-emerald-600 px-4 py-3 text-center text-sm font-semibold text-white"
                     >
-                        Open Portal
+                        {portalButtonText}
                     </Link>
+                    {isAuthenticated && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                logout();
+                                setOpen(false);
+                                navigate("/login");
+                            }}
+                            className="mt-2 w-full block rounded-lg border border-slate-200 px-4 py-2 text-center text-sm font-semibold text-slate-600"
+                        >
+                            Sign Out
+                        </button>
+                    )}
                 </div>
             )}
         </header>

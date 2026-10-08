@@ -9,11 +9,14 @@ import com.mlbb2g209.healthinsurance.support.SupportTicket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Set;
 
 @Component
+@Order(1)
 public class DataInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
@@ -21,37 +24,68 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final SupportRepository supportRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserRepository userRepository,
                            RoleRepository roleRepository,
-                           SupportRepository supportRepository) {
+                           SupportRepository supportRepository,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.supportRepository = supportRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public void run(String... args) throws Exception {
-        if (roleRepository.count() == 0) {
-            log.info("Seeding initial Roles into database...");
-            Role adminRole = roleRepository.save(new Role("ROLE_ADMIN", "Administrator role with full system privileges"));
-            Role customerRole = roleRepository.save(new Role("ROLE_CUSTOMER", "Policyholder customer role"));
-            Role supportRole = roleRepository.save(new Role("ROLE_SUPPORT", "Customer support agent role"));
+        // 0. Migrate any existing plain-text passwords to BCrypt (one-time migration)
+        migratePlainTextPasswords();
 
-            if (userRepository.count() == 0) {
-                log.info("Seeding initial Dummy Users into database...");
+        // 1. Ensure all standard roles exist in database
+        Role adminRole = roleRepository.findByName("ROLE_ADMIN").orElseGet(() ->
+                roleRepository.save(new Role("ROLE_ADMIN", "Administrator role with full system privileges"))
+        );
+        Role userRole = roleRepository.findByName("ROLE_USER").orElseGet(() ->
+                roleRepository.save(new Role("ROLE_USER", "Standard policyholder user role"))
+        );
+        Role customerRole = roleRepository.findByName("ROLE_CUSTOMER").orElseGet(() ->
+                roleRepository.save(new Role("ROLE_CUSTOMER", "Policyholder customer role"))
+        );
+        Role supportRole = roleRepository.findByName("ROLE_SUPPORT").orElseGet(() ->
+                roleRepository.save(new Role("ROLE_SUPPORT", "Customer support agent role"))
+        );
 
-                User admin = new User("admin", "admin@healthinsurance.com", "password123", "System", "Admin", "+1-555-0100", true, Set.of(adminRole));
-                User john = new User("johndoe", "john.doe@example.com", "password123", "John", "Doe", "+1-555-0101", true, Set.of(customerRole));
-                User jane = new User("janesmith", "jane.smith@example.com", "password123", "Jane", "Smith", "+1-555-0102", true, Set.of(customerRole));
-                User bob = new User("support_bob", "bob.support@healthinsurance.com", "password123", "Bob", "Miller", "+1-555-0103", true, Set.of(supportRole));
-                User alice = new User("alice_w", "alice.williams@example.com", "password123", "Alice", "Williams", "+1-555-0104", true, Set.of(customerRole));
-
-                userRepository.saveAll(List.of(admin, john, jane, bob, alice));
-                log.info("Successfully seeded 5 dummy users (IDs: 1 to 5).");
-            }
+        // 2. Ensure default ADMIN account exists
+        if (!userRepository.existsByUsername("admin")) {
+            String encodedAdminPwd = passwordEncoder.encode("password123");
+            User admin = new User("admin", "admin@healthinsurance.com", encodedAdminPwd, "System", "Admin", "+1-555-0100", true, Set.of(adminRole));
+            userRepository.save(admin);
+            log.info("Seeded default ADMIN user: username='admin', password='password123'");
         }
 
+        // 3. Ensure default USER account exists for role-based testing
+        if (!userRepository.existsByUsername("user")) {
+            String encodedUserPwd = passwordEncoder.encode("password123");
+            User normalUser = new User("user", "user@healthinsurance.com", encodedUserPwd, "Regular", "User", "+1-555-0199", true, Set.of(userRole));
+            userRepository.save(normalUser);
+            log.info("Seeded default USER user: username='user', password='password123'");
+        }
+
+        // 4. Seed initial dummy users if database is fresh
+        if (userRepository.count() <= 2) {
+            log.info("Seeding additional Dummy Users into database...");
+
+            String encodedDemoPwd = passwordEncoder.encode("password123");
+            User john = new User("johndoe", "john.doe@example.com", encodedDemoPwd, "John", "Doe", "+1-555-0101", true, Set.of(userRole, customerRole));
+            User jane = new User("janesmith", "jane.smith@example.com", encodedDemoPwd, "Jane", "Smith", "+1-555-0102", true, Set.of(userRole, customerRole));
+            User bob = new User("support_bob", "bob.support@healthinsurance.com", encodedDemoPwd, "Bob", "Miller", "+1-555-0103", true, Set.of(supportRole));
+            User alice = new User("alice_w", "alice.williams@example.com", encodedDemoPwd, "Alice", "Williams", "+1-555-0104", true, Set.of(userRole, customerRole));
+
+            userRepository.saveAll(List.of(john, jane, bob, alice));
+            log.info("Successfully seeded demo users (johndoe, janesmith, support_bob, alice_w).");
+        }
+
+        // 5. Seed support tickets
         if (supportRepository.count() == 0) {
             userRepository.findByUsername("johndoe").ifPresent(john -> {
                 SupportTicket t1 = new SupportTicket();
@@ -88,5 +122,22 @@ public class DataInitializer implements CommandLineRunner {
 
             log.info("Successfully seeded initial dummy support tickets.");
         }
+    }
+
+    /**
+     * One-time migration: if any user's password_hash does not start with the BCrypt prefix "$2",
+     * it is treated as plain text and re-encoded with BCrypt. This handles the case where the
+     * database was seeded with plain-text passwords before this fix was applied.
+     */
+    private void migratePlainTextPasswords() {
+        userRepository.findAll().forEach(user -> {
+            String hash = user.getPasswordHash();
+            if (hash != null && !hash.startsWith("$2")) {
+                // Plain-text password detected — encode and save
+                user.setPasswordHash(passwordEncoder.encode(hash));
+                userRepository.save(user);
+                log.info("Migrated plain-text password to BCrypt for user: '{}'", user.getUsername());
+            }
+        });
     }
 }

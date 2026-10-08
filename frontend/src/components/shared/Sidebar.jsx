@@ -7,15 +7,17 @@ import {
   CreditCard, 
   Building2, 
   LifeBuoy, 
-  ShieldAlert,
+  ShieldAlert, 
   Sparkles,
-  Settings,
-  Activity,
-  BrainCircuit,
-  X
+  Settings, 
+  BrainCircuit, 
+  X 
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
+  const { isAdmin } = useAuth();
+
   const mainNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/policies', label: 'Policies', icon: ShieldCheck },
@@ -25,11 +27,17 @@ const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
     { path: '/support', label: 'Support', icon: LifeBuoy },
   ];
 
-  const adminNavItems = [
-    { path: '/admin', label: 'Reports & Admin', icon: ShieldAlert },
-    { path: '/ai-insights', label: 'AI Insights', icon: BrainCircuit, isAi: true },
-    { path: '/settings', label: 'Settings', icon: Settings },
-  ];
+  // Only ADMIN users have access to the Administration section & reports
+  const adminNavItems = isAdmin
+    ? [
+        { path: '/admin', label: 'Reports & Admin', icon: ShieldAlert },
+        { path: '/ai-insights', label: 'AI Insights', icon: BrainCircuit, isAi: true },
+        { path: '/settings', label: 'Settings', icon: Settings },
+      ]
+    : [
+        { path: '/ai-insights', label: 'AI Insights', icon: BrainCircuit, isAi: true },
+        { path: '/settings', label: 'Settings', icon: Settings },
+      ];
 
   const sidebarContent = (
     <div className="flex flex-col justify-between h-full p-4 bg-white">
@@ -65,10 +73,10 @@ const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
           </nav>
         </div>
 
-        {/* AI & Admin Navigation */}
+        {/* AI & Admin Navigation (Only reports & admin shown for ADMIN) */}
         <div>
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 block">
-            Administration
+            {isAdmin ? 'Administration' : 'System Tools'}
           </span>
           <nav className="mt-2 space-y-1">
             {adminNavItems.map((item) => {

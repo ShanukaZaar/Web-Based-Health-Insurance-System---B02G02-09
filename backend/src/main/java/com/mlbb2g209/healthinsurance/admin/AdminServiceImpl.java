@@ -11,6 +11,7 @@ import com.mlbb2g209.healthinsurance.policy.Policy;
 import com.mlbb2g209.healthinsurance.policy.PolicyRepository;
 import com.mlbb2g209.healthinsurance.support.SupportRepository;
 import com.mlbb2g209.healthinsurance.support.SupportTicket;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ public class AdminServiceImpl implements AdminService {
     private final PaymentRepository paymentRepository;
     private final HospitalRepository hospitalRepository;
     private final SupportRepository supportRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public AdminServiceImpl(
             UserRepository userRepository,
@@ -42,7 +44,8 @@ public class AdminServiceImpl implements AdminService {
             ClaimRepository claimRepository,
             PaymentRepository paymentRepository,
             HospitalRepository hospitalRepository,
-            SupportRepository supportRepository) {
+            SupportRepository supportRepository,
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.reportRepository = reportRepository;
@@ -52,6 +55,7 @@ public class AdminServiceImpl implements AdminService {
         this.paymentRepository = paymentRepository;
         this.hospitalRepository = hospitalRepository;
         this.supportRepository = supportRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     private void logActivity(String action, String description) {
@@ -223,18 +227,24 @@ public class AdminServiceImpl implements AdminService {
         user.setLastName(userDTO.getLastName());
         user.setPhoneNumber(userDTO.getPhoneNumber());
         user.setIsActive(userDTO.getIsActive() != null ? userDTO.getIsActive() : true);
-        // Store password as-is (plain text for dev; use BCrypt in production)
-        user.setPasswordHash(password != null && !password.isEmpty() ? password : "changeme");
+        // BCrypt-encode the password so it works with Spring Security's password matcher
+        String rawPassword = (password != null && !password.isEmpty()) ? password : "changeme123";
+        user.setPasswordHash(passwordEncoder.encode(rawPassword));
 
         // Assign roles
         Set<Role> roles = new HashSet<>();
         if (userDTO.getRoles() != null && !userDTO.getRoles().isEmpty()) {
             for (String roleName : userDTO.getRoles()) {
-                roleRepository.findByName(roleName).ifPresent(roles::add);
+                roleRepository.findByName(roleName)
+                        .or(() -> roleRepository.findByName("ROLE_" + roleName))
+                        .or(() -> roleRepository.findByName(roleName.replace("ROLE_", "")))
+                        .ifPresent(roles::add);
             }
         }
         if (roles.isEmpty()) {
-            roleRepository.findByName("ROLE_USER").ifPresent(roles::add);
+            roleRepository.findByName("ROLE_USER")
+                    .or(() -> roleRepository.findByName("USER"))
+                    .ifPresent(roles::add);
         }
         user.setRoles(roles);
 
@@ -264,9 +274,14 @@ public class AdminServiceImpl implements AdminService {
         if (userDTO.getRoles() != null && !userDTO.getRoles().isEmpty()) {
             Set<Role> roles = new HashSet<>();
             for (String roleName : userDTO.getRoles()) {
-                roleRepository.findByName(roleName).ifPresent(roles::add);
+                roleRepository.findByName(roleName)
+                        .or(() -> roleRepository.findByName("ROLE_" + roleName))
+                        .or(() -> roleRepository.findByName(roleName.replace("ROLE_", "")))
+                        .ifPresent(roles::add);
             }
-            user.setRoles(roles);
+            if (!roles.isEmpty()) {
+                user.setRoles(roles);
+            }
         }
 
         User updated = userRepository.save(user);

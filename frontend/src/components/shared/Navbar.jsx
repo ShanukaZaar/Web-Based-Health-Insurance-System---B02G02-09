@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Shield, 
   Sparkles, 
@@ -7,15 +8,47 @@ import {
   User, 
   ChevronDown, 
   Activity, 
-  Menu,
-  X,
-  Bot
+  Menu, 
+  X, 
+  Bot,
+  LogOut
 } from 'lucide-react';
 import AiNotificationsPopover from '../ai/AiNotificationsPopover';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 const Navbar = ({ onOpenAiAssistant, toggleMobileSidebar, isMobileSidebarOpen }) => {
+  const navigate = useNavigate();
+  const { user, isAdmin, isUser, role, logout } = useAuth();
+  const { showToast } = useToast();
+
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const handleLogout = () => {
+    logout();
+    showToast('You have been logged out successfully.', 'info', 'Logged Out');
+    navigate('/login');
+  };
+
+  const getInitials = () => {
+    if (user?.firstName) {
+      return (
+        user.firstName.charAt(0) +
+        (user.lastName ? user.lastName.charAt(0) : '')
+      ).toUpperCase();
+    }
+    if (user?.username) {
+      return user.username.substring(0, 2).toUpperCase();
+    }
+    return isAdmin ? 'AD' : 'US';
+  };
+
+  const displayName = user
+    ? user.firstName
+      ? `${user.firstName} ${user.lastName || ''}`.trim()
+      : `@${user.username}`
+    : isAdmin ? 'Admin' : 'User';
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 shadow-xs">
@@ -38,8 +71,12 @@ const Navbar = ({ onOpenAiAssistant, toggleMobileSidebar, isMobileSidebarOpen })
               <span className="font-bold text-slate-900 text-base tracking-tight leading-tight">
                 CarePulse <span className="text-emerald-600">Health</span>
               </span>
-              <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                Insurance Portal
+              <span className={`hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded border ${
+                isAdmin 
+                  ? 'text-emerald-800 bg-emerald-50 border-emerald-200' 
+                  : 'text-blue-800 bg-blue-50 border-blue-200'
+              }`}>
+                {isAdmin ? 'Admin Portal' : 'User Portal'}
               </span>
             </div>
             <span className="text-xs text-slate-500 hidden sm:block">Health Insurance Management System</span>
@@ -93,16 +130,33 @@ const Navbar = ({ onOpenAiAssistant, toggleMobileSidebar, isMobileSidebarOpen })
 
         <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 
-        {/* User Profile Chip */}
+        {/* User Profile Chip (Dynamic Role-Based) */}
         <div className="flex items-center gap-2.5 pl-1">
-          <div className="w-9 h-9 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-800 font-bold text-sm flex items-center justify-center">
-            AD
+          <div className={`w-9 h-9 rounded-lg font-bold text-sm flex items-center justify-center border ${
+            isAdmin
+              ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
+              : 'bg-blue-100 border-blue-300 text-blue-800'
+          }`}>
+            {getInitials()}
           </div>
           <div className="hidden xl:block text-left">
-            <span className="text-xs font-bold text-slate-800 block leading-tight">Admin Portal</span>
-            <span className="text-[11px] text-slate-500 font-medium">Administrator</span>
+            <span className="text-xs font-bold text-slate-800 block leading-tight max-w-[130px] truncate">
+              {displayName}
+            </span>
+            <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+              Role: <strong className={isAdmin ? 'text-emerald-700' : 'text-blue-700'}>{role || 'USER'}</strong>
+            </span>
           </div>
         </div>
+
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          title="Sign Out"
+          className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </header>
   );
