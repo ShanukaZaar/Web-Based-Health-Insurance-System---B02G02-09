@@ -1,56 +1,61 @@
 package com.mlbb2g209.healthinsurance.claim;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public class ClaimDTO {
+@Entity
+@Table(name = "deleted_claims")
+public class DeletedClaim {
 
+    // Own id on purpose: the original claim id is kept separately in
+    // originalClaimId.
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "original_claim_id", nullable = false)
+    private Long originalClaimId;
+
+    @Column(name = "claim_number", nullable = false, unique = true)
     private String claimNumber;
 
-    @NotNull(message = "userId is required")
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @NotNull(message = "policyId is required")
+    @Column(name = "policy_id", nullable = false)
     private Long policyId;
 
-    @NotNull(message = "claimAmount is required")
-    @Positive(message = "claimAmount must be greater than zero")
+    @Column(name = "claim_amount", nullable = false)
     private BigDecimal claimAmount;
 
+    @Column(name = "approved_amount")
     private BigDecimal approvedAmount;
-    private String status;
 
-    @NotBlank(message = "description is required")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private ClaimStatus status;
+
+    @Column(name = "description", length = 1000)
     private String description;
 
+    @Column(name = "document_path")
     private String documentPath;
+
+    @Column(name = "rejection_reason", length = 500)
     private String rejectionReason;
+
+    @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
-    private LocalDateTime createdAt;
 
-    public ClaimDTO() {
-    }
+    @Column(name = "original_created_at")
+    private LocalDateTime originalCreatedAt;
 
-    public ClaimDTO(Long id, String claimNumber, Long userId, Long policyId, BigDecimal claimAmount,
-                    BigDecimal approvedAmount, String status, String description, String documentPath,
-                    String rejectionReason, LocalDateTime reviewedAt, LocalDateTime createdAt) {
-        this.id = id;
-        this.claimNumber = claimNumber;
-        this.userId = userId;
-        this.policyId = policyId;
-        this.claimAmount = claimAmount;
-        this.approvedAmount = approvedAmount;
-        this.status = status;
-        this.description = description;
-        this.documentPath = documentPath;
-        this.rejectionReason = rejectionReason;
-        this.reviewedAt = reviewedAt;
-        this.createdAt = createdAt;
+    @Column(name = "deleted_at", nullable = false)
+    private LocalDateTime deletedAt;
+
+    public DeletedClaim() {
     }
 
     public Long getId() {
@@ -59,6 +64,14 @@ public class ClaimDTO {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getOriginalClaimId() {
+        return originalClaimId;
+    }
+
+    public void setOriginalClaimId(Long originalClaimId) {
+        this.originalClaimId = originalClaimId;
     }
 
     public String getClaimNumber() {
@@ -101,11 +114,11 @@ public class ClaimDTO {
         this.approvedAmount = approvedAmount;
     }
 
-    public String getStatus() {
+    public ClaimStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(ClaimStatus status) {
         this.status = status;
     }
 
@@ -141,11 +154,19 @@ public class ClaimDTO {
         this.reviewedAt = reviewedAt;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public LocalDateTime getOriginalCreatedAt() {
+        return originalCreatedAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setOriginalCreatedAt(LocalDateTime originalCreatedAt) {
+        this.originalCreatedAt = originalCreatedAt;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
     }
 }

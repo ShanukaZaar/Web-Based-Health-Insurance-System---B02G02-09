@@ -26,6 +26,25 @@ public class ClaimController {
         this.claimService = claimService;
     }
 
+
+        @GetMapping("/deleted")
+    public ResponseEntity<ApiResponse<List<DeletedClaimDTO>>> getAllDeletedClaims() {
+        List<DeletedClaimDTO> deleted = claimService.getAllDeletedClaims();
+        return ResponseEntity.ok(ApiResponse.success("Deleted claims retrieved successfully", deleted));
+    }
+
+    @GetMapping("/deleted/{id}")
+    public ResponseEntity<ApiResponse<DeletedClaimDTO>> getDeletedClaimById(@PathVariable Long id) {
+        DeletedClaimDTO deleted = claimService.getDeletedClaimById(id);
+        return ResponseEntity.ok(ApiResponse.success("Deleted claim retrieved successfully", deleted));
+    }
+
+    @GetMapping("/deleted/user/{userId}")
+    public ResponseEntity<ApiResponse<List<DeletedClaimDTO>>> getDeletedClaimsByUser(@PathVariable Long userId) {
+        List<DeletedClaimDTO> deleted = claimService.getDeletedClaimsByUser(userId);
+        return ResponseEntity.ok(ApiResponse.success("Deleted claims retrieved successfully", deleted));
+    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<List<ClaimDTO>>> getAllClaims() {
         List<ClaimDTO> claims = claimService.getAllClaims();
