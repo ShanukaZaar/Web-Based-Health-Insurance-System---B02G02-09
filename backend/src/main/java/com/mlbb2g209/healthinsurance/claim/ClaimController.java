@@ -107,14 +107,14 @@ public class ClaimController {
 
     @PutMapping("/{id}/approve")
     public ResponseEntity<ApiResponse<ClaimDTO>> approveClaim(@PathVariable Long id,
-                                                               @RequestBody ApproveClaimRequest request) {
+                                                            @RequestBody ApproveClaimRequest request) {
         ClaimDTO updated = claimService.approveClaim(id, request.getApprovedAmount());
         return ResponseEntity.ok(ApiResponse.success("Claim approved successfully", updated));
     }
 
     @PutMapping("/{id}/reject")
     public ResponseEntity<ApiResponse<ClaimDTO>> rejectClaim(@PathVariable Long id,
-                                                              @RequestBody RejectClaimRequest request) {
+                                                            @RequestBody RejectClaimRequest request) {
         ClaimDTO updated = claimService.rejectClaim(id, request.getRejectionReason());
         return ResponseEntity.ok(ApiResponse.success("Claim rejected successfully", updated));
     }

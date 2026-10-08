@@ -1,5 +1,7 @@
 import api from './api';
 
+
+//API endpoin URLs
 export const claimService = {
   getAllClaims: () => api.get('/claims'),
   getClaimById: (id) => api.get(`/claims/${id}`),
