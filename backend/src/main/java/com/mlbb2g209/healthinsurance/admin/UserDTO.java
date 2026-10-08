@@ -13,6 +13,7 @@ public class UserDTO {
     private String phoneNumber;
     private Boolean isActive;
     private Set<String> roles;
+    private String role;
     private LocalDateTime createdAt;
 
     public UserDTO() {
@@ -27,7 +28,24 @@ public class UserDTO {
         this.phoneNumber = phoneNumber;
         this.isActive = isActive;
         this.roles = roles;
+        this.role = determinePrimaryRole(roles);
         this.createdAt = createdAt;
+    }
+
+    private static String determinePrimaryRole(Set<String> roles) {
+        if (roles != null) {
+            for (String r : roles) {
+                if ("ROLE_ADMIN".equalsIgnoreCase(r) || "ADMIN".equalsIgnoreCase(r)) {
+                    return "ADMIN";
+                }
+            }
+            for (String r : roles) {
+                if ("ROLE_USER".equalsIgnoreCase(r) || "USER".equalsIgnoreCase(r) || "ROLE_CUSTOMER".equalsIgnoreCase(r)) {
+                    return "USER";
+                }
+            }
+        }
+        return "USER";
     }
 
     public Long getId() {
@@ -92,6 +110,17 @@ public class UserDTO {
 
     public void setRoles(Set<String> roles) {
         this.roles = roles;
+    }
+
+    public String getRole() {
+        if (role == null) {
+            role = determinePrimaryRole(roles);
+        }
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
     public LocalDateTime getCreatedAt() {

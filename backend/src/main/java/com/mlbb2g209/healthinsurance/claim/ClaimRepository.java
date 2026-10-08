@@ -9,6 +9,7 @@ import java.util.Optional;
 @Repository
 public interface ClaimRepository extends JpaRepository<Claim, Long> {
     Optional<Claim> findByClaimNumber(String claimNumber);
+    boolean existsByClaimNumber(String claimNumber);
     List<Claim> findByUserId(Long userId);
     List<Claim> findByStatus(ClaimStatus status);
 }
