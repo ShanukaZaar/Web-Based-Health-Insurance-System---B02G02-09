@@ -37,8 +37,8 @@ public class ClaimDTO {
     }
 
     public ClaimDTO(Long id, String claimNumber, Long userId, Long policyId, BigDecimal claimAmount,
-                     BigDecimal approvedAmount, String status, String description, String documentPath,
-                     String rejectionReason, LocalDateTime reviewedAt, LocalDateTime createdAt) {
+                    BigDecimal approvedAmount, String status, String description, String documentPath,
+                    String rejectionReason, LocalDateTime reviewedAt, LocalDateTime createdAt) {
         this.id = id;
         this.claimNumber = claimNumber;
         this.userId = userId;
